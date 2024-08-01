@@ -16,6 +16,9 @@ fsync-protocol
 go.work
 go.work.sum
 
+# JSON data
+*.json
+
 # env file
 .env
 
