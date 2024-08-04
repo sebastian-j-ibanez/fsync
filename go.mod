@@ -1,3 +1,3 @@
-module fsync-protocol
+module fsyncprotocol
 
 go 1.22.5
