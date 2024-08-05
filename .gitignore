@@ -4,7 +4,7 @@
 *.dll
 *.so
 *.dylib
-fsync-protocol
+fsync
 
 # Test binary, built with `go test -c`
 *.test
