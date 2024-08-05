@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net"
 	"os"
-	"fsyncprotocol/util"
+	"fsync/util"
 )
 
 

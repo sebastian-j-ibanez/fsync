@@ -3,7 +3,7 @@ package protocol
 import (
 	"os"
 	"encoding/json"
-	"fsyncprotocol/util"
+	"fsync/util"
 )
 
 const peerFile = "peer_data.json"

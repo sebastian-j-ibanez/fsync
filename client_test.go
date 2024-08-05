@@ -4,8 +4,8 @@ import (
 	"encoding/gob"
 	"net"
 	"testing"
-	"fsyncprotocol/protocol"
-	"fsyncprotocol/util"
+	"fsync/protocol"
+	"fsync/util"
 )
 
 const addr = "127.0.0.1:2000"

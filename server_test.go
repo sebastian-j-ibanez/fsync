@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net"
 	"testing"	
-	"fsyncprotocol/protocol"
-	"fsyncprotocol/util"
+	"fsync/protocol"
+	"fsync/util"
 )
 
 // Send single packet
