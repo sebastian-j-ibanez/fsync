@@ -6,4 +6,6 @@
 - Share video files without Google Drive/OneDrive
 
 ## Disclaimer
-**fsync** is in early alpha. There is no gurantee on software quality or stability. Read the [LICENSE](LICENSE) for copyright and warranty details.
+**fsync** is in early alpha. There is no gurantee on software quality or stability.
+
+Read the [LICENSE](LICENSE) for copyright and warranty details.
