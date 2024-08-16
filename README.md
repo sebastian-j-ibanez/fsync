@@ -8,4 +8,4 @@
 ## Disclaimer
 **fsync** is in early alpha. There is no gurantee on software quality or stability.
 
-Please read the [LICENSE](LICENSE) for copyright and warranty details.
+Read the [LICENSE](LICENSE) for copyright and warranty details.
