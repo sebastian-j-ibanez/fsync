@@ -2,7 +2,9 @@ package protocol
 
 import (
 	"encoding/gob"
+	"fmt"
 	"net"
+	"time"
 )
 
 type SocketHandler struct {
@@ -56,6 +58,12 @@ func (s SocketHandler) ReceivePackets() ([]Packet, error) {
 			return nil, err
 		}
 		packets = append(packets, tmpPacket)
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	pktLen := len(packets)
+	if pktLen != pktNum {
+		fmt.Printf("expected %d packets, received %d", pktLen, pktNum)
 	}
 	
 	return packets, nil
