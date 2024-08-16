@@ -36,12 +36,6 @@ func (s SocketHandler) SendPackets(packets []Packet) error {
 	return nil
 }
 
-func (s SocketHandler) SendPacket(packet Packet) error {
-	enc := gob.NewEncoder(s.Con)
-	err := enc.Encode(packet)
-	return err
-}
-
 func (s SocketHandler) ReceivePackets() ([]Packet, error) {
 	var packets []Packet	
 	var pktNum int
@@ -67,6 +61,19 @@ func (s SocketHandler) ReceivePackets() ([]Packet, error) {
 	}
 	
 	return packets, nil
+}
+
+func (s SocketHandler) SendPacket(packet Packet) error {
+	enc := gob.NewEncoder(s.Con)
+	err := enc.Encode(packet)
+	return err
+}
+
+func (s SocketHandler) ReceivePacket() (Packet, error) {
+	var packet Packet
+	dec := gob.NewDecoder(s.Con)
+	err := dec.Decode(packet)
+	return packet, err
 }
 
 func GetPacketData(packets []Packet) []byte {

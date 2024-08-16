@@ -17,6 +17,24 @@ type FileHash struct {
 	Hash string
 }
 
+// Get file names in directory
+func (d DirManager) GetFileNames() ([]string, error) {
+	if err := d.checkPath(); err != nil {
+		return nil, err
+	}
+
+	var names []string
+	dirEntries, err := os.ReadDir(d.Path)
+	if err != nil {
+		return nil, err
+	}
+	for _, entry := range dirEntries {
+		names = append(names, entry.Name())
+	}
+
+	return names, nil
+}
+
 // Convert file to packets
 func (d DirManager) PacketizeFile(name string) ([]prot.Packet, error) {
 	// Check if dirmanager has valid path
@@ -39,7 +57,7 @@ func (d DirManager) PacketizeFile(name string) ([]prot.Packet, error) {
 	}
 
 	// Convert file data to consistent-sized chunks 
-	data, err := chunkBuffer(fileData, prot.MaxBodySize)
+	dataChunks, err := chunkBuffer(fileData, prot.MaxBodySize)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +67,7 @@ func (d DirManager) PacketizeFile(name string) ([]prot.Packet, error) {
 	for i := range pktNum {
 		tmpPacket := prot.Packet{
 			OrderNum: i,
-			Body: data[i],
+			Body: dataChunks[i],
 		}
 		packets = append(packets, tmpPacket)
 	}

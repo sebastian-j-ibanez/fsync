@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/gob"
 	dir "fsync/directory"
-	"fsync/protocol"
+	prot "fsync/protocol"
 	"fsync/util"
 	"net"
 	"os"
@@ -12,52 +12,56 @@ import (
 
 const addr = "127.0.0.1:2000"
 
-// Receive and print single packet
-func Test1_ReceivePacket(t *testing.T) {
-	var s protocol.SocketHandler
-	var err error
-	s.Con, err = net.Dial("tcp", addr)
-	util.CheckError(err)
-	gob.Register(protocol.Packet{})
-	dec := gob.NewDecoder(s.Con)
-	p := protocol.Packet{}
-	err = dec.Decode(&p)
-	util.CheckError(err)
-	t.Logf("\nOrder num: %d\nBody size: %d\n", p.OrderNum, p.Body)
-}
-
 // Receive packets and print their order num
-func Test2_PrintPacketData(t *testing.T) {
-	var s protocol.SocketHandler
+func Test1_ReceiveBasicPacket(t *testing.T) {
+	var s prot.SocketHandler
 	var err error
 	s.Con, err = net.Dial("tcp", addr)
 	util.CheckError(err)
 	
-	packets, err := s.ReceivePackets()
+	packet, err := s.ReceivePacket()
 	util.CheckError(err)
-
-	for _, packet := range packets {
-		t.Logf("\nPacket #: %d", packet.OrderNum)
-	}
+	t.Logf("\nPacket #: %d", len(packet.Body))
 }
 
-func Test3_WritePacketsToFile(t *testing.T) {
-	var s protocol.SocketHandler
+func Test2_WritePacketsToFile(t *testing.T) {
+	var s prot.SocketHandler
 	var err error
 
 	s.Con, err = net.Dial("tcp", addr)
 	util.CheckError(err)
 
-	packets, err := s.ReceivePackets()
+	packet, err := s.ReceivePackets()
 	util.CheckError(err)
 
 	var d dir.DirManager
 	d.Path, err = os.Getwd()
 	util.CheckError(err)
 
-	data := protocol.GetPacketData(packets)
+	data := prot.GetPacketData(packet)
 	util.CheckError(err)
 
 	name := "3d-geo.jpg"
 	d.WriteDataToFile(name, data)
+}
+
+func Test4_ReceiveImgPkt(t *testing.T) {
+	var s prot.SocketHandler
+	var err error
+	s.Con, err = net.Dial("tcp", addr)
+	util.CheckError(err)
+
+	var imgPkt prot.Packet
+	dec := gob.NewDecoder(s.Con)
+	err = dec.Decode(&imgPkt)
+
+	home, err := os.UserHomeDir()
+	util.CheckError(err)
+
+	file, err := os.Create(home + "/sunflower.png")
+	util.CheckError(err)
+	defer file.Close()
+
+	_, err = file.Write(imgPkt.Body)
+	util.CheckError(err)
 }
