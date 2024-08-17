@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
-	prot "fsync/protocol"
 	"os"
 )
 
@@ -33,62 +32,6 @@ func (d DirManager) GetFileNames() ([]string, error) {
 	}
 
 	return names, nil
-}
-
-// Convert file to packets
-func (d DirManager) PacketizeFile(name string) ([]prot.Packet, error) {
-	// Check if dirmanager has valid path
-	if err := d.checkPath(); err != nil {
-		return nil, err
-	}
-
-	// Read from file
-	fullPath := d.Path + "/" + name
-	fileData, err := os.ReadFile(fullPath)
-	if err != nil {
-		return nil, err
-	}
- 	
-	// Calculate number of packets
-	pktNum := int(1)
-	fileSize := len(fileData)
-	if fileSize >= prot.MaxBodySize {
-		pktNum = int(fileSize) / int(prot.MaxBodySize)
-	}
-
-	// Convert file data to consistent-sized chunks 
-	dataChunks, err := chunkBuffer(fileData, prot.MaxBodySize)
-	if err != nil {
-		return nil, err
-	}
-	
-	// Create and append packets
-	var packets []prot.Packet
-	for i := range pktNum {
-		tmpPacket := prot.Packet{
-			OrderNum: i,
-			Body: dataChunks[i],
-		}
-		packets = append(packets, tmpPacket)
-	}
-	
-	return packets, nil
-}
-
-// Write data to file
-func (d DirManager) WriteDataToFile(name string, data []byte) error {
-	// Check if dirmanager has valid path
-	if err := d.checkPath(); err != nil {
-		return err
-	}
-
-	// Open file
-	fullPath := d.Path + "/" + name
-	if err := os.WriteFile(fullPath, data, 0666); err != nil {
-		return err
-	}
-	
-	return nil
 }
 
 // Hash files in directory

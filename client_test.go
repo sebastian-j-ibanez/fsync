@@ -1,10 +1,7 @@
 package main
 
 import (
-	"encoding/gob"
-	dir "fsync/directory"
 	prot "fsync/protocol"
-	"fsync/util"
 	"net"
 	"os"
 	"testing"
@@ -13,55 +10,42 @@ import (
 const addr = "127.0.0.1:2000"
 
 // Receive packets and print their order num
-func Test1_ReceiveBasicPacket(t *testing.T) {
+func Test1_ReceivePktNum(t *testing.T) {
 	var s prot.SocketHandler
 	var err error
 	s.Con, err = net.Dial("tcp", addr)
-	util.CheckError(err)
+	if err != nil {
+		t.Fatal(err)
+	}
 	
-	packet, err := s.ReceivePacket()
-	util.CheckError(err)
-	t.Logf("\nPacket #: %d", len(packet.Body))
+	pktNum, err := s.ReceivePktNum()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := int64(1)
+	if pktNum != expected {
+		t.Fatalf("expected: %d\treceived: %d", expected, pktNum)
+	}
 }
 
-func Test2_WritePacketsToFile(t *testing.T) {
-	var s prot.SocketHandler
-	var err error
-
-	s.Con, err = net.Dial("tcp", addr)
-	util.CheckError(err)
-
-	packet, err := s.ReceivePackets()
-	util.CheckError(err)
-
-	var d dir.DirManager
-	d.Path, err = os.Getwd()
-	util.CheckError(err)
-
-	data := prot.GetPacketData(packet)
-	util.CheckError(err)
-
-	name := "3d-geo.jpg"
-	d.WriteDataToFile(name, data)
-}
-
-func Test4_ReceiveImgPkt(t *testing.T) {
+func Test2_DownloadFile(t *testing.T) {
 	var s prot.SocketHandler
 	var err error
 	s.Con, err = net.Dial("tcp", addr)
-	util.CheckError(err)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	var imgPkt prot.Packet
-	dec := gob.NewDecoder(s.Con)
-	err = dec.Decode(&imgPkt)
-
-	home, err := os.UserHomeDir()
-	util.CheckError(err)
-
-	file, err := os.Create(home + "/sunflower.png")
-	util.CheckError(err)
-	defer file.Close()
-
-	_, err = file.Write(imgPkt.Body)
-	util.CheckError(err)
+	destination, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	
+	err = s.DownloadFile(destination + "/3d-geo.jpg")
+	if err != nil {
+		t.Fatal(err)
+	}
 }
+
+

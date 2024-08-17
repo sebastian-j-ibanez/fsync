@@ -2,9 +2,8 @@ package protocol
 
 import (
 	"encoding/gob"
-	"fmt"
 	"net"
-	"time"
+	"os"
 )
 
 type SocketHandler struct {
@@ -13,69 +12,120 @@ type SocketHandler struct {
 }
 
 type Packet struct {
-	OrderNum int
+	OrderNum int64
 	Body []byte
 }
 
 const MaxBodySize = 61440
 
-func (s SocketHandler) SendPackets(packets []Packet) error {
-	enc := gob.NewEncoder(s.Con)
-	pktNum := len(packets)
-	err := enc.Encode(pktNum)
+// Open file at path and stream file over socket connection
+func (s SocketHandler) UploadFile(path string) error {
+	file, err := os.Open(path)
 	if err != nil {
 		return err
 	}
-	for _, packet := range packets {
-		err := enc.Encode(packet)
+
+	fileStat, err := file.Stat()
+	if err != nil {
+		return err
+	}
+
+
+	// Calculate file size and send packet num
+	fileSize := fileStat.Size()
+	pktNum := CalculatePktNum(fileSize)
+	enc := gob.NewEncoder(s.Con)
+	err = enc.Encode(pktNum)
+	if err != nil {
+		return err
+	}
+
+	// Iterate over file, read data, send data in packet
+	offset := int64(0)
+	for i := range pktNum {
+		// Calculate data size if uneven amount of data left 
+		var dataSize int64
+		if (fileSize - offset) < MaxBodySize {
+			dataSize = fileSize - offset
+		} else {
+			dataSize = MaxBodySize
+		}
+
+		// Read data
+		data := make([]byte, dataSize)
+		bytesRead, err := file.ReadAt(data, offset)
 		if err != nil {
 			return err
 		}
+		offset += int64(bytesRead)
+
+		// Create temp packet and send over socket connection
+		tempPkt := Packet{
+			OrderNum: i,
+			Body: data,
+		}
+		err = enc.Encode(tempPkt)
 	}
 	
 	return nil
 }
 
-func (s SocketHandler) ReceivePackets() ([]Packet, error) {
-	var packets []Packet	
-	var pktNum int
-	dec := gob.NewDecoder(s.Con)
-	err := dec.Decode(&pktNum)
+// Save file at path
+func (s SocketHandler) DownloadFile(path string) error {
+	file, err := os.Create(path)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	for range pktNum {
-		var tmpPacket Packet
-		err = dec.Decode(&tmpPacket)
+	// Get number of incoming packets
+	var pktNum int64
+	dec := gob.NewDecoder(s.Con)
+	err = dec.Decode(&pktNum)
+	if err != nil {
+		return err
+	}
+
+	// Write incoming packets to file
+	offset := int64(0)
+	for _ = range pktNum {
+		var tempPkt Packet
+		err = dec.Decode(&tempPkt)
+		bytesWritten, err := file.WriteAt(tempPkt.Body, offset)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		packets = append(packets, tmpPacket)
-		time.Sleep(10 * time.Millisecond)
-	}
-
-	pktLen := len(packets)
-	if pktLen != pktNum {
-		fmt.Printf("expected %d packets, received %d", pktLen, pktNum)
+		offset += int64(bytesWritten)
 	}
 	
-	return packets, nil
+	return nil
 }
 
-func (s SocketHandler) SendPacket(packet Packet) error {
+func (s SocketHandler) SendPktNum(pktNum int64) error {
 	enc := gob.NewEncoder(s.Con)
-	err := enc.Encode(packet)
-	return err
+	err := enc.Encode(pktNum)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (s SocketHandler) ReceivePacket() (Packet, error) {
-	var packet Packet
+func (s SocketHandler) ReceivePktNum() (int64, error) {
+	var pktNum int64
 	dec := gob.NewDecoder(s.Con)
-	err := dec.Decode(packet)
-	return packet, err
+	err := dec.Decode(pktNum)
+	return pktNum, err
 }
 
+// Calculate number of packets based on file size 
+func CalculatePktNum(fileSize int64) int64 {
+	pktNum := fileSize / MaxBodySize
+	if rem := fileSize % MaxBodySize; rem > 0 {
+		pktNum++
+	}
+	return pktNum
+}
+
+// Append byte slices together
 func GetPacketData(packets []Packet) []byte {
 	var data []byte
 	for _, packet := range packets {
