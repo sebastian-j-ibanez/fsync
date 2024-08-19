@@ -16,17 +16,27 @@ type FileHash struct {
 	Hash string
 }
 
-// Get file names in directory
-func (d DirManager) GetFileNames() ([]string, error) {
-	if err := d.checkPath(); err != nil {
+func NewDirManager(path string) (*DirManager, error) {
+	_, err := os.Stat(path)
+	if err != nil {
 		return nil, err
 	}
 
+	d := &DirManager{
+		Path: path,
+	}
+	
+	return d, nil
+}
+
+// Get file names in directory
+func (d DirManager) GetFileNames() ([]string, error) {
 	var names []string
 	dirEntries, err := os.ReadDir(d.Path)
 	if err != nil {
 		return nil, err
 	}
+
 	for _, entry := range dirEntries {
 		names = append(names, entry.Name())
 	}
@@ -38,11 +48,6 @@ func (d DirManager) GetFileNames() ([]string, error) {
 func (d DirManager) HashDir() ([]FileHash, error) {
 	var hashes []FileHash
 	var err error
-
-	err = d.checkPath()
-	if err != nil {
-		return nil, err
-	}
 
 	dirEntries, err := os.ReadDir(d.Path)
 	if err != nil {
@@ -68,15 +73,6 @@ func (d DirManager) HashDir() ([]FileHash, error) {
 	}
 	
 	return hashes, err
-}
-
-// Return error if DirManager does not have a valid path
-func (d DirManager) checkPath() error {
-	_, err := os.Stat(d.Path)
-	if err != nil && os.IsNotExist(err) {
-		return err
-	}
-	return nil
 }
 
 // Convert byte slice into smaller evenly-sized byte slices (taking into account leftover any bytes)
