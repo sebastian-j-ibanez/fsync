@@ -1,6 +1,9 @@
 package main
 
 import (
+	"encoding/gob"
+	clt "fsync/client"
+	dir "fsync/directory"
 	prot "fsync/protocol"
 	"net"
 	"os"
@@ -17,8 +20,11 @@ func Test1_ReceivePktNum(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	
-	pktNum, err := s.ReceivePktNum()
+	dec := gob.NewDecoder(s.Con)
+	var pktNum int64
+	err = dec.Decode(pktNum)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,4 +54,30 @@ func Test2_DownloadFile(t *testing.T) {
 	}
 }
 
+func Test3_InitSync(t *testing.T) {
+	// Init directory manager
+	path, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	d, err := dir.NewDirManager(path + "/img")
+
+	// Mock peer
+	peer := prot.Peer{
+		IP: "127.0.0.1",
+		Port: "2000",
+	}
+
+	// Init client
+	c := clt.Client{
+		DirMan: *d,
+		Peers: []prot.Peer { peer },
+	}
+
+	// Init sync with peer
+	err = c.InitSync()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
 

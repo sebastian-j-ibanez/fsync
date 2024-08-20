@@ -2,12 +2,16 @@ package protocol
 
 import (
 	"encoding/gob"
+	dir "fsync/directory"
 	"net"
 	"os"
 )
 
+const DefaultPort = "2000"
+const FmtDefaultPort = ":2000"
+const MaxBodySize = 61440
+
 type SocketHandler struct {
-	Peers []Peer
 	Con net.Conn
 }
 
@@ -15,8 +19,6 @@ type Packet struct {
 	OrderNum int64
 	Body []byte
 }
-
-const MaxBodySize = 61440
 
 // Open file at path and stream file over socket connection
 func (s SocketHandler) UploadFile(path string) error {
@@ -100,20 +102,29 @@ func (s SocketHandler) DownloadFile(path string) error {
 	return nil
 }
 
-func (s SocketHandler) SendPktNum(pktNum int64) error {
+// Send slice of file hashes over socket
+func (s SocketHandler) SendFileHashes(hashes []dir.FileHash) error {
+	gob.Register([]dir.FileHash{})
 	enc := gob.NewEncoder(s.Con)
-	err := enc.Encode(pktNum)
+	err := enc.Encode(hashes)
 	if err != nil {
 		return err
 	}
+	
 	return nil
 }
 
-func (s SocketHandler) ReceivePktNum() (int64, error) {
-	var pktNum int64
+// Receive slice of file hashes from socket
+func (s SocketHandler) ReceiveFileHashes() ([]dir.FileHash, error) {
+	gob.Register([]dir.FileHash{})
 	dec := gob.NewDecoder(s.Con)
-	err := dec.Decode(pktNum)
-	return pktNum, err
+	hashes := []dir.FileHash {}
+	err := dec.Decode(&hashes)
+	if err != nil {
+		return nil, err
+	}
+	
+	return hashes, nil
 }
 
 // Calculate number of packets based on file size 

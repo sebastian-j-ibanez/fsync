@@ -75,6 +75,28 @@ func (d DirManager) HashDir() ([]FileHash, error) {
 	return hashes, err
 }
 
+// Return unique values in hashesA but not in hashesB
+func GetUniqueHashes(hashesA []FileHash, hashesB []FileHash) *[]FileHash {
+	sharedHashes := new([]FileHash)
+
+	for _, hash := range hashesA {
+		if !containsHash(hashesB, hash) {
+			*sharedHashes = append(*sharedHashes, hash)
+		}
+	}
+	
+	return sharedHashes
+}
+
+func containsHash(hashes []FileHash, hash FileHash) bool {
+	for _, h := range hashes {
+		if h == hash {
+			return true
+		}
+	}
+	return false
+}
+
 // Convert byte slice into smaller evenly-sized byte slices (taking into account leftover any bytes)
 func chunkBuffer(buffer []byte, chunkSize int) ([][]byte, error) {
 	if chunkSize <= 0 {

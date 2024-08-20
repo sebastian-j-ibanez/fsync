@@ -13,6 +13,10 @@ type Peer struct{
 	Port string
 }
 
+func (p Peer) Addr() string {
+	return p.IP + ":" + p.Port
+}
+
 // Append peer to peerFile
 func RegisterPeer(p Peer) {
 	peers := GetPeers()
