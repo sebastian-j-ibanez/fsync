@@ -21,10 +21,9 @@ func Test1_ReceivePktNum(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	
 	dec := gob.NewDecoder(s.Con)
 	var pktNum int64
-	err = dec.Decode(pktNum)
+	err = dec.Decode(&pktNum)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,8 +46,8 @@ func Test2_DownloadFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	
-	err = s.DownloadFile(destination + "/3d-geo.jpg")
+
+	err = s.DownloadFile(destination + "/img-test/3d-geo.jpg")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,17 +60,20 @@ func Test3_InitSync(t *testing.T) {
 		t.Fatal(err)
 	}
 	d, err := dir.NewDirManager(path + "/img")
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Mock peer
 	peer := prot.Peer{
-		IP: "127.0.0.1",
+		IP:   "127.0.0.1",
 		Port: "2000",
 	}
 
 	// Init client
 	c := clt.Client{
 		DirMan: *d,
-		Peers: []prot.Peer { peer },
+		Peers:  []prot.Peer{peer},
 	}
 
 	// Init sync with peer
@@ -80,4 +82,3 @@ func Test3_InitSync(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-
