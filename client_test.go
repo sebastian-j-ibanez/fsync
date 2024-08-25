@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/gob"
+	"fmt"
 	"net"
 	"os"
 	"testing"
@@ -82,4 +83,20 @@ func Test3_InitSync(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func Test4_RegisterPeer(t *testing.T) {
+	// Init file
+	_, err := os.Create("peer_data.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Register mock peer
+	p := prot.Peer{
+		IP:   "127.0.0.1",
+		Port: "2000",
+	}
+	prot.RegisterPeer(p)
+	fmt.Println("registered default peer.")
 }

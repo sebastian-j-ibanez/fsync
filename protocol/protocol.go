@@ -89,9 +89,12 @@ func (s SocketHandler) DownloadFile(path string) error {
 
 	// Write incoming packets to file
 	offset := int64(0)
-	for _ = range pktNum {
+	for range pktNum {
 		var tempPkt Packet
 		err = dec.Decode(&tempPkt)
+		if err != nil {
+			return err
+		}
 		bytesWritten, err := file.WriteAt(tempPkt.Body, offset)
 		if err != nil {
 			return err

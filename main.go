@@ -1,9 +1,7 @@
 package main
 
-import (
-	"fmt"
-)
+import "github.com/sebastian-j-ibanez/fsync/cmd"
 
 func main() {
-	fmt.Println("To do: implement main function")
+	cmd.Execute()
 }
