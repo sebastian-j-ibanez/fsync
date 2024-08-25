@@ -1,15 +1,16 @@
 package protocol
 
 import (
-	"os"
 	"encoding/json"
-	"fsync/util"
+	"os"
+
+	"github.com/sebastian-j-ibanez/fsync/util"
 )
 
 const peerFile = "peer_data.json"
 
-type Peer struct{
-	IP string
+type Peer struct {
+	IP   string
 	Port string
 }
 
@@ -28,7 +29,7 @@ func RegisterPeer(p Peer) {
 func GetPeers() []Peer {
 	file, err := os.ReadFile(peerFile)
 	util.CheckError(err)
-	
+
 	peers := []Peer{}
 	err = json.Unmarshal([]byte(file), &peers)
 	util.CheckError(err)

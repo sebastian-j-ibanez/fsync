@@ -2,12 +2,13 @@ package main
 
 import (
 	"encoding/gob"
-	clt "fsync/client"
-	dir "fsync/directory"
-	prot "fsync/protocol"
 	"net"
 	"os"
 	"testing"
+
+	clt "github.com/sebastian-j-ibanez/fsync/client"
+	dir "github.com/sebastian-j-ibanez/fsync/directory"
+	prot "github.com/sebastian-j-ibanez/fsync/protocol"
 )
 
 const testImgPath = "./img/3d-geo.jpg"

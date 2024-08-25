@@ -2,9 +2,10 @@ package protocol
 
 import (
 	"encoding/gob"
-	dir "fsync/directory"
 	"net"
 	"os"
+
+	dir "github.com/sebastian-j-ibanez/fsync/directory"
 )
 
 const DefaultPort = "2000"
@@ -17,7 +18,7 @@ type SocketHandler struct {
 
 type Packet struct {
 	OrderNum int64
-	Body []byte
+	Body     []byte
 }
 
 // Open file at path and stream file over socket connection
@@ -32,7 +33,6 @@ func (s SocketHandler) UploadFile(path string) error {
 		return err
 	}
 
-
 	// Calculate file size and send packet num
 	fileSize := fileStat.Size()
 	pktNum := CalculatePktNum(fileSize)
@@ -45,7 +45,7 @@ func (s SocketHandler) UploadFile(path string) error {
 	// Iterate over file, read data, send data in packet
 	offset := int64(0)
 	for i := range pktNum {
-		// Calculate data size if uneven amount of data left 
+		// Calculate data size if uneven amount of data left
 		var dataSize int64
 		if (fileSize - offset) < MaxBodySize {
 			dataSize = fileSize - offset
@@ -64,11 +64,11 @@ func (s SocketHandler) UploadFile(path string) error {
 		// Create temp packet and send over socket connection
 		tempPkt := Packet{
 			OrderNum: i,
-			Body: data,
+			Body:     data,
 		}
 		err = enc.Encode(tempPkt)
 	}
-	
+
 	return nil
 }
 
@@ -98,7 +98,7 @@ func (s SocketHandler) DownloadFile(path string) error {
 		}
 		offset += int64(bytesWritten)
 	}
-	
+
 	return nil
 }
 
@@ -110,7 +110,7 @@ func (s SocketHandler) SendFileHashes(hashes []dir.FileHash) error {
 	if err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -118,16 +118,16 @@ func (s SocketHandler) SendFileHashes(hashes []dir.FileHash) error {
 func (s SocketHandler) ReceiveFileHashes() ([]dir.FileHash, error) {
 	gob.Register([]dir.FileHash{})
 	dec := gob.NewDecoder(s.Con)
-	hashes := []dir.FileHash {}
+	hashes := []dir.FileHash{}
 	err := dec.Decode(&hashes)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return hashes, nil
 }
 
-// Calculate number of packets based on file size 
+// Calculate number of packets based on file size
 func CalculatePktNum(fileSize int64) int64 {
 	pktNum := fileSize / MaxBodySize
 	if rem := fileSize % MaxBodySize; rem > 0 {

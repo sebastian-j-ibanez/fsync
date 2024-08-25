@@ -2,15 +2,16 @@ package client
 
 import (
 	"errors"
-	dir "fsync/directory"
-	prot "fsync/protocol"
 	"net"
+
+	dir "github.com/sebastian-j-ibanez/fsync/directory"
+	prot "github.com/sebastian-j-ibanez/fsync/protocol"
 )
 
 type Client struct {
 	DirMan dir.DirManager
-	Sock prot.SocketHandler
-	Peers []prot.Peer
+	Sock   prot.SocketHandler
+	Peers  []prot.Peer
 }
 
 // Init sync with peers
@@ -21,7 +22,7 @@ func (c Client) InitSync() error {
 		msg := "unable to hash directory: " + err.Error()
 		return errors.New(msg)
 	}
-	
+
 	for _, peer := range c.Peers {
 		// Connect to peer
 		c.Sock.Con, err = net.Dial("tcp", peer.Addr())
@@ -46,7 +47,7 @@ func (c Client) InitSync() error {
 			msg := "unable to send file hashes: " + err.Error()
 			return errors.New(msg)
 		}
-		
+
 		for _, file := range *uniqueFiles {
 			path := c.DirMan.Path + "/" + file.Name
 			err = c.Sock.UploadFile(path)
@@ -56,7 +57,7 @@ func (c Client) InitSync() error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -101,6 +102,6 @@ func (c Client) AwaitSync() error {
 			return errors.New(msg)
 		}
 	}
-	
+
 	return nil
 }
