@@ -57,7 +57,7 @@ func Test3_AwaitSync(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	d, err := dir.NewDirManager(path + "/img-test/3d-geo.jpg")
+	d, err := dir.NewDirManager(path + "/img-test")
 	if err != nil {
 		t.Fatal(err)
 	}
