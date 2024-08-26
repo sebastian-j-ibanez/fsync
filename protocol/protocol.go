@@ -67,6 +67,9 @@ func (s SocketHandler) UploadFile(path string) error {
 			Body:     data,
 		}
 		err = enc.Encode(tempPkt)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
