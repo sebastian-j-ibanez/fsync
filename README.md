@@ -8,7 +8,7 @@
 ## Use Cases
 - Sync wallpaper folder
 - Share video files
-- No access to server hosted services like Google Drive/OneDrive
+- No access to services like Google Drive/OneDrive
 
 ## Disclaimer
 **fsync** is in early alpha. There is no gurantee on software quality or stability.
