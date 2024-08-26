@@ -6,8 +6,9 @@
 **fsync** is a CLI tool designed to sync files between devices. The protocol is entirely P2P, eliminating the need for a server or cloud instance.
 
 ## Use Cases
-- Sync wallpapers between devices
-- Share video files without Google Drive/OneDrive
+- Sync wallpaper folder
+- Share video files
+- No access to server hosted services like Google Drive/OneDrive
 
 ## Disclaimer
 **fsync** is in early alpha. There is no gurantee on software quality or stability.
