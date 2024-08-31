@@ -21,21 +21,7 @@ var syncCmd = &cobra.Command{
 	Long: `Send a sync request to peer clients.
 Uses list of peers unless port flag is specified.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// Handle peer flag
-		var peer prot.Peer
-		var err error
-		peerFlag, _ := cmd.Flags().GetString("peer")
-		if peerFlag != "" {
-			if ip := net.ParseIP(peerFlag); ip != nil {
-				peer.IP = ip.String()
-				peer.Port = "2000"
-			} else {
-				fmt.Fprintf(os.Stderr, "fsync: ERROR: invalid peer ip: %s\n", peerFlag)
-				os.Exit(-1)
-			}
-		}
-
-		// Init directory manager
+		// Init directory manager amd client
 		path, err := os.Getwd()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "fsync: ERROR: %v\n", err)
@@ -46,27 +32,40 @@ Uses list of peers unless port flag is specified.`,
 			fmt.Fprintf(os.Stderr, "fsync: ERROR: %v\n", err)
 			os.Exit(-1)
 		}
-
-		// Init client
 		c := client.Client{
 			DirMan: *d,
-			Peers:  []prot.Peer{peer},
 		}
 
-		// If peer is initialized, init sync with peer.
-		// Otherwise use resgistered peer list.
-		if peer == (prot.Peer{}) {
-			err = c.InitSync()
+		// Get peer flag
+		peerFlag, _ := cmd.Flags().GetString("peer")
+
+		// If peer flag is empty, get peers from file (otherwise use flag argument as peer)
+		if peerFlag == "" {
+			c.Peers, err = prot.GetPeers()
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "fsync: ERROR: %v\n", err)
+				fmt.Fprintf(os.Stderr, "fsync: ERROR: unable to get peers: %v\n", err)
 				os.Exit(-1)
 			}
 		} else {
-			err = c.InitSyncWithPeer(peer)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "fsync: ERROR: %v\n", err)
+			// Validate IP flag is valid
+			var peer prot.Peer
+			if ip := net.ParseIP(peerFlag); ip != nil {
+				peer.IP = ip.String()
+				peer.Port = "2000"
+			} else {
+				fmt.Fprintf(os.Stderr, "fsync: ERROR: invalid peer ip: %s\n", peerFlag)
 				os.Exit(-1)
 			}
+
+			// Set client peers
+			c.Peers = []prot.Peer{peer}
+		}
+
+		// Init sync
+		err = c.InitSync()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "fsync: ERROR: %v\n", err)
+			os.Exit(-1)
 		}
 	},
 }
