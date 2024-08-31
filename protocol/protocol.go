@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"encoding/gob"
+	"errors"
 	"net"
 	"os"
 
@@ -13,7 +14,9 @@ const FmtDefaultPort = ":2000"
 const MaxBodySize = 61440
 
 type SocketHandler struct {
-	Con net.Conn
+	Conn net.Conn
+	Enc  *gob.Encoder
+	Dec  *gob.Decoder
 }
 
 type Packet struct {
@@ -21,23 +24,38 @@ type Packet struct {
 	Body     []byte
 }
 
+func NewSocketHandler(conn net.Conn) SocketHandler {
+	var s SocketHandler
+	if conn != nil {
+		s.Conn = conn
+		s.Enc = gob.NewEncoder(conn)
+		s.Dec = gob.NewDecoder(conn)
+	} else {
+		s.Conn, s.Enc, s.Dec = nil, nil, nil
+	}
+
+	return s
+}
+
 // Open file at path and stream file over socket connection
 func (s SocketHandler) UploadFile(path string) error {
+	// Get file stats
 	file, err := os.Open(path)
 	if err != nil {
 		return err
 	}
-
 	fileStat, err := file.Stat()
 	if err != nil {
 		return err
 	}
 
-	// Calculate file size and send packet num
+	// Calculate and send file size
 	fileSize := fileStat.Size()
 	pktNum := CalculatePktNum(fileSize)
-	enc := gob.NewEncoder(s.Con)
-	err = enc.Encode(pktNum)
+	if s.Enc == nil {
+		return errors.New("socket encoder uninitialized")
+	}
+	err = s.Enc.Encode(pktNum)
 	if err != nil {
 		return err
 	}
@@ -66,7 +84,7 @@ func (s SocketHandler) UploadFile(path string) error {
 			OrderNum: i,
 			Body:     data,
 		}
-		err = enc.Encode(tempPkt)
+		err = s.Enc.Encode(tempPkt)
 		if err != nil {
 			return err
 		}
@@ -76,7 +94,7 @@ func (s SocketHandler) UploadFile(path string) error {
 }
 
 // Save file at path
-func (s SocketHandler) DownloadFile(path string) error {
+func (s *SocketHandler) DownloadFile(path string) error {
 	file, err := os.Create(path)
 	if err != nil {
 		return err
@@ -84,8 +102,10 @@ func (s SocketHandler) DownloadFile(path string) error {
 
 	// Get number of incoming packets
 	var pktNum int64
-	dec := gob.NewDecoder(s.Con)
-	err = dec.Decode(&pktNum)
+	if s.Dec == nil {
+		return errors.New("sockete decoder uninitialized")
+	}
+	err = s.Dec.Decode(&pktNum)
 	if err != nil {
 		return err
 	}
@@ -94,7 +114,7 @@ func (s SocketHandler) DownloadFile(path string) error {
 	offset := int64(0)
 	for range pktNum {
 		var tempPkt Packet
-		err = dec.Decode(&tempPkt)
+		err = s.Dec.Decode(&tempPkt)
 		if err != nil {
 			return err
 		}
@@ -109,10 +129,12 @@ func (s SocketHandler) DownloadFile(path string) error {
 }
 
 // Send slice of file hashes over socket
-func (s SocketHandler) SendFileHashes(hashes []dir.FileHash) error {
-	gob.Register([]dir.FileHash{})
-	enc := gob.NewEncoder(s.Con)
-	err := enc.Encode(hashes)
+func (s *SocketHandler) SendFileHashes(hashes []dir.FileHash) error {
+	// gob.Register([]dir.FileHash{})
+	if s.Enc == nil {
+		return errors.New("socket encoder uninitialized")
+	}
+	err := s.Enc.Encode(hashes)
 	if err != nil {
 		return err
 	}
@@ -121,11 +143,13 @@ func (s SocketHandler) SendFileHashes(hashes []dir.FileHash) error {
 }
 
 // Receive slice of file hashes from socket
-func (s SocketHandler) ReceiveFileHashes() ([]dir.FileHash, error) {
-	gob.Register([]dir.FileHash{})
-	dec := gob.NewDecoder(s.Con)
+func (s *SocketHandler) ReceiveFileHashes() ([]dir.FileHash, error) {
+	//gob.Register([]dir.FileHash{})
 	hashes := []dir.FileHash{}
-	err := dec.Decode(&hashes)
+	if s.Dec == nil {
+		return nil, errors.New("sockete decoder uninitialized")
+	}
+	err := s.Dec.Decode(&hashes)
 	if err != nil {
 		return nil, err
 	}

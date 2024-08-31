@@ -18,12 +18,12 @@ const addr = "127.0.0.1:2000"
 func Test1_ReceivePktNum(t *testing.T) {
 	var s prot.SocketHandler
 	var err error
-	s.Con, err = net.Dial("tcp", addr)
+	s.Conn, err = net.Dial("tcp", addr)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	dec := gob.NewDecoder(s.Con)
+	dec := gob.NewDecoder(s.Conn)
 	var pktNum int64
 	err = dec.Decode(&pktNum)
 	if err != nil {
@@ -39,7 +39,7 @@ func Test1_ReceivePktNum(t *testing.T) {
 func Test2_DownloadFile(t *testing.T) {
 	var s prot.SocketHandler
 	var err error
-	s.Con, err = net.Dial("tcp", addr)
+	s.Conn, err = net.Dial("tcp", addr)
 	if err != nil {
 		t.Fatal(err)
 	}

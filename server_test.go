@@ -21,13 +21,13 @@ func Test1_SendPktNum(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s.Con, err = lis.Accept()
+	s.Conn, err = lis.Accept()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	pktNum := int64(1)
-	enc := gob.NewEncoder(s.Con)
+	enc := gob.NewEncoder(s.Conn)
 	err = enc.Encode(pktNum)
 	if err != nil {
 		t.Fatal(err)
@@ -41,7 +41,7 @@ func Test2_UploadFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s.Con, err = lis.Accept()
+	s.Conn, err = lis.Accept()
 	if err != nil {
 		t.Fatal(err)
 	}
