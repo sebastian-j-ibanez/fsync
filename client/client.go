@@ -3,9 +3,17 @@ package client
 import (
 	"errors"
 	"net"
+	"strconv"
+	"time"
 
+	"github.com/hashicorp/mdns"
 	dir "github.com/sebastian-j-ibanez/fsync/directory"
 	prot "github.com/sebastian-j-ibanez/fsync/protocol"
+)
+
+const (
+	serviceName = "fsync"
+	timeout     = 5 * time.Second
 )
 
 type Client struct {
@@ -160,4 +168,31 @@ func (c Client) AwaitSync() error {
 	}
 
 	return nil
+}
+
+func FindService() (prot.Peer, error) {
+	entryCh := make(chan *mdns.ServiceEntry, 4)
+	defer close(entryCh)
+
+	go func() {
+		mdns.Lookup(serviceName, entryCh)
+	}()
+
+	select {
+	case service := <-entryCh:
+		if service != nil {
+			ip := service.AddrV4.String()
+			port := strconv.Itoa(service.Port)
+			peer := prot.Peer{
+				IP:   ip,
+				Port: port,
+			}
+
+			return peer, nil
+		} else {
+			return prot.Peer{}, errors.New("unable to receive peer info")
+		}
+	case <-time.After(timeout):
+		return prot.Peer{}, errors.New("timed out searching for peer")
+	}
 }

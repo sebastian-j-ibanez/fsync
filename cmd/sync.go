@@ -36,18 +36,15 @@ Uses list of peers unless port flag is specified.`,
 			DirMan: *d,
 		}
 
-		// Get peer flag
 		peerFlag, _ := cmd.Flags().GetString("peer")
+		scanFlag, _ := cmd.Flags().GetString("scan")
 
-		// If peer flag is empty, get peers from file (otherwise use flag argument as peer)
-		if peerFlag == "" {
-			c.Peers, err = prot.GetPeers()
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "fsync: ERROR: unable to get peers: %v\n", err)
-				os.Exit(-1)
-			}
-		} else {
-			// Validate IP flag is valid
+		// Flag cases:
+		// 1. Peer flag (use specific ip)
+		// 2. Scan flag (scan local network for peer)
+		// 3. Neither (use client list saved in JSON)
+		if peerFlag != "" {
+			// Validate ip argument
 			var peer prot.Peer
 			if ip := net.ParseIP(peerFlag); ip != nil {
 				peer.IP = ip.String()
@@ -59,6 +56,21 @@ Uses list of peers unless port flag is specified.`,
 
 			// Set client peers
 			c.Peers = []prot.Peer{peer}
+		} else if scanFlag != "" {
+			// Scan for peer
+			peer, err := client.FindService()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "fsync: ERROR: %v\n", err)
+				os.Exit(-1)
+			}
+
+			c.Peers = append(c.Peers, peer)
+		} else {
+			c.Peers, err = prot.GetPeers()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "fsync: ERROR: unable to get peers: %v\n", err)
+				os.Exit(-1)
+			}
 		}
 
 		// Init sync
@@ -73,4 +85,6 @@ Uses list of peers unless port flag is specified.`,
 func init() {
 	rootCmd.AddCommand(syncCmd)
 	syncCmd.PersistentFlags().String("peer", "", "specify IP for sync")
+	syncCmd.PersistentFlags().String("scan", "", "scan network for listening peer")
+	syncCmd.MarkFlagsMutuallyExclusive("peer", "scan")
 }
