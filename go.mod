@@ -1,6 +1,6 @@
 module github.com/sebastian-j-ibanez/fsync
 
-go 1.23
+go 1.22
 
 require (
 	github.com/hashicorp/mdns v1.0.5
