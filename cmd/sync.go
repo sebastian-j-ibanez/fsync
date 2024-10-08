@@ -27,7 +27,7 @@ Uses list of peers unless port flag is specified.`,
 			fmt.Fprintf(os.Stderr, "fsync: ERROR: %v\n", err)
 			os.Exit(-1)
 		}
-		d, err := dir.NewDirManager(path + "/img")
+		d, err := dir.NewDirManager(path)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "fsync: ERROR: %v\n", err)
 			os.Exit(-1)
@@ -37,7 +37,7 @@ Uses list of peers unless port flag is specified.`,
 		}
 
 		peerFlag, _ := cmd.Flags().GetString("peer")
-		scanFlag, _ := cmd.Flags().GetString("scan")
+		scanFlag, _ := cmd.Flags().GetBool("scan")
 
 		// Flag cases:
 		// 1. Peer flag (use specific ip)
@@ -53,17 +53,14 @@ Uses list of peers unless port flag is specified.`,
 				fmt.Fprintf(os.Stderr, "fsync: ERROR: invalid peer ip: %s\n", peerFlag)
 				os.Exit(-1)
 			}
-
-			// Set client peers
 			c.Peers = []prot.Peer{peer}
-		} else if scanFlag != "" {
+		} else if scanFlag {
 			// Scan for peer
-			peer, err := client.FindService()
+			peer, err := client.DiscoverMDNSService()
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "fsync: ERROR: %v\n", err)
 				os.Exit(-1)
 			}
-
 			c.Peers = append(c.Peers, peer)
 		} else {
 			c.Peers, err = prot.GetPeers()
@@ -85,6 +82,5 @@ Uses list of peers unless port flag is specified.`,
 func init() {
 	rootCmd.AddCommand(syncCmd)
 	syncCmd.PersistentFlags().String("peer", "", "specify IP for sync")
-	syncCmd.PersistentFlags().String("scan", "", "scan network for listening peer")
-	syncCmd.MarkFlagsMutuallyExclusive("peer", "scan")
+	syncCmd.PersistentFlags().Bool("scan", false, "scan network for peer")
 }
