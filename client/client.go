@@ -2,7 +2,10 @@ package client
 
 import (
 	"errors"
+	"fmt"
+	"log"
 	"net"
+	"os"
 	"strconv"
 	"time"
 
@@ -12,8 +15,9 @@ import (
 )
 
 const (
-	serviceName = "fsync"
-	timeout     = 5 * time.Second
+	defaultPort = 2000
+	serviceName = "_fsync._tcp"
+	timeout     = 10 * time.Second
 )
 
 type Client struct {
@@ -120,9 +124,15 @@ func (c Client) InitSyncWithPeer(peer prot.Peer) error {
 }
 
 // Await sync from peer over default port
-func (c Client) AwaitSync() error {
+func (c Client) AwaitSync(portNum int) error {
+	// Set port
+	if portNum == 0 {
+		portNum = defaultPort
+	}
+	port := ": " + strconv.Itoa(portNum)
+
 	var err error
-	lis, err := net.Listen("tcp", ":2000")
+	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		return err
 	}
@@ -170,7 +180,8 @@ func (c Client) AwaitSync() error {
 	return nil
 }
 
-func FindService() (prot.Peer, error) {
+// Discover mDNS fsync service
+func DiscoverMDNSService() (prot.Peer, error) {
 	entryCh := make(chan *mdns.ServiceEntry, 4)
 	defer close(entryCh)
 
@@ -195,4 +206,42 @@ func FindService() (prot.Peer, error) {
 	case <-time.After(timeout):
 		return prot.Peer{}, errors.New("timed out searching for peer")
 	}
+}
+
+// Start mDNS service for other peers to connect to
+func BroadcastMDNSService(port int) error {
+	// Setup our service export
+	host, _ := os.Hostname()
+	info := []string{"peer-to-peer file syncing"}
+	service, err := mdns.NewMDNSService(host, serviceName, "", "", port, nil, info)
+	if err != nil {
+		return fmt.Errorf("unable to create MDNS service: %w", err)
+	}
+
+	// Create the mDNS server
+	server, err := mdns.NewServer(&mdns.Config{Zone: service})
+	if err != nil {
+		return fmt.Errorf("failed to create mDNS server: %w", err)
+	}
+	defer server.Shutdown()
+
+	// Listen for TCP connections
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		return fmt.Errorf("failed to start TCP listener: %w", err)
+	}
+	defer listener.Close()
+
+	// Wait for a connection
+	conn, err := listener.Accept()
+	if err != nil {
+		return fmt.Errorf("failed to accept connection: %w", err)
+	}
+	defer conn.Close()
+
+	// A connection was established, you can handle it here if needed
+	// For now, we'll just log it and return
+	log.Printf("Connection established from %s", conn.RemoteAddr())
+
+	return nil
 }
