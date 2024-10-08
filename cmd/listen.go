@@ -20,18 +20,29 @@ var listenCmd = &cobra.Command{
 	Long: `Listen over a socket connection for a sync request.
 Listens over all network interfaces on port 2000 by default.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// Handle port flag
-		var port int
-		var err error
+		// Get flags
 		portFlag, _ := cmd.Flags().GetString("port")
+		scanFlag, _ := cmd.Flags().GetBool("scan")
+
+		// Handle port flag
+		port := 2000
+		var err error
 		if portFlag != "" {
 			port, err = strconv.Atoi(portFlag)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "fsync: ERROR: Invalid port: %s\n", portFlag)
+				fmt.Fprintf(os.Stderr, "fsync: ERROR: cannot convert arg to port\n")
 				os.Exit(-1)
 			}
-		} else {
-			port = 2000
+		}
+
+		// Handle scan flag
+		if scanFlag {
+			go func() {
+				if err := client.BroadcastMDNSService(port); err != nil {
+					fmt.Fprintf(os.Stderr, "fsync: ERROR: %s", err.Error())
+					os.Exit(-1)
+				}
+			}()
 		}
 
 		// Init dir manager and client
@@ -53,7 +64,7 @@ Listens over all network interfaces on port 2000 by default.`,
 
 		// Await sync
 		fmt.Printf("listening over port %d...\n", port)
-		err = c.AwaitSync()
+		err = c.AwaitSync(port)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "fsync: ERROR: %v\n", err)
 			os.Exit(-1)
@@ -65,4 +76,5 @@ Listens over all network interfaces on port 2000 by default.`,
 func init() {
 	rootCmd.AddCommand(listenCmd)
 	listenCmd.PersistentFlags().String("port", "", "specify the port (default: 2000)")
+	listenCmd.PersistentFlags().Bool("scan", false, "scan network for peer")
 }

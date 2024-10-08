@@ -9,9 +9,10 @@ import (
 	dir "github.com/sebastian-j-ibanez/fsync/directory"
 )
 
-const DefaultPort = "2000"
-const FmtDefaultPort = ":2000"
-const MaxBodySize = 61440
+const (
+	Port        = "2000"
+	MaxBodySize = 61440
+)
 
 type SocketHandler struct {
 	Conn net.Conn
@@ -103,7 +104,7 @@ func (s *SocketHandler) DownloadFile(path string) error {
 	// Get number of incoming packets
 	var pktNum int64
 	if s.Dec == nil {
-		return errors.New("sockete decoder uninitialized")
+		return errors.New("socket decoder uninitialized")
 	}
 	err = s.Dec.Decode(&pktNum)
 	if err != nil {
@@ -147,7 +148,7 @@ func (s *SocketHandler) ReceiveFileHashes() ([]dir.FileHash, error) {
 	//gob.Register([]dir.FileHash{})
 	hashes := []dir.FileHash{}
 	if s.Dec == nil {
-		return nil, errors.New("sockete decoder uninitialized")
+		return nil, errors.New("socket decoder uninitialized")
 	}
 	err := s.Dec.Decode(&hashes)
 	if err != nil {

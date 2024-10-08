@@ -53,6 +53,8 @@ func Test2_UploadFile(t *testing.T) {
 }
 
 func Test3_AwaitSync(t *testing.T) {
+	const port = 2000
+
 	// Init directory manager
 	path, err := os.Getwd()
 	if err != nil {
@@ -69,7 +71,7 @@ func Test3_AwaitSync(t *testing.T) {
 	}
 
 	// Await sync request
-	err = c.AwaitSync()
+	err = c.AwaitSync(port)
 	if err != nil {
 		t.Fatal(err)
 	}
