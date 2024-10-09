@@ -36,16 +36,17 @@ Listens over all network interfaces on port 2000 by default.`,
 		}
 
 		// Handle scan flag
+		endBroadcast := make(chan bool)
 		if scanFlag {
 			go func() {
-				if err := client.BroadcastMDNSService(port); err != nil {
+				if err := client.BroadcastMDNSService(port, endBroadcast); err != nil {
 					fmt.Fprintf(os.Stderr, "fsync: ERROR: %s", err.Error())
 					os.Exit(-1)
 				}
 			}()
 		}
 
-		// Init dir manager and client
+		// Init dir manager
 		path, err := os.Getwd()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "fsync: ERROR: %v\n", err)
@@ -58,6 +59,7 @@ Listens over all network interfaces on port 2000 by default.`,
 			os.Exit(-1)
 		}
 
+		// Init client
 		c := client.Client{
 			DirMan: *d,
 		}
@@ -69,6 +71,10 @@ Listens over all network interfaces on port 2000 by default.`,
 			fmt.Fprintf(os.Stderr, "fsync: ERROR: %v\n", err)
 			os.Exit(-1)
 		}
+
+		// End broadcast
+		endBroadcast <- true
+
 		fmt.Printf("sync completed successfully!\n")
 	},
 }
