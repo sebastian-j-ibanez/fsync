@@ -3,7 +3,6 @@ package client
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"strconv"
@@ -209,13 +208,13 @@ func DiscoverMDNSService() (prot.Peer, error) {
 }
 
 // Start mDNS service for other peers to connect to
-func BroadcastMDNSService(port int) error {
+func BroadcastMDNSService(port int, endBroadcast <-chan bool) error {
 	// Setup our service export
 	host, _ := os.Hostname()
 	info := []string{"peer-to-peer file syncing"}
 	service, err := mdns.NewMDNSService(host, serviceName, "", "", port, nil, info)
 	if err != nil {
-		return fmt.Errorf("unable to create MDNS service: %w", err)
+		return fmt.Errorf("unable to create mDNS service: %w", err)
 	}
 
 	// Create the mDNS server
@@ -225,23 +224,13 @@ func BroadcastMDNSService(port int) error {
 	}
 	defer server.Shutdown()
 
-	// Listen for TCP connections
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-	if err != nil {
-		return fmt.Errorf("failed to start TCP listener: %w", err)
+	// Check for end broadcast flag
+	for {
+		select {
+		case <-endBroadcast:
+			return nil
+		default:
+			time.Sleep(2 * time.Second)
+		}
 	}
-	defer listener.Close()
-
-	// Wait for a connection
-	conn, err := listener.Accept()
-	if err != nil {
-		return fmt.Errorf("failed to accept connection: %w", err)
-	}
-	defer conn.Close()
-
-	// A connection was established, you can handle it here if needed
-	// For now, we'll just log it and return
-	log.Printf("Connection established from %s", conn.RemoteAddr())
-
-	return nil
 }
