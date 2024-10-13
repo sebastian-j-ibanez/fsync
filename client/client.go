@@ -49,7 +49,7 @@ func (c Client) InitSync() error {
 
 		// Send unique file hashes
 		uniqueFiles := dir.GetUniqueHashes(cltHashes, peerHashes)
-		err = c.Sock.SendFileHashes(*uniqueFiles)
+		err = c.Sock.SendGenericData(*uniqueFiles)
 		if err != nil {
 			msg := "unable to send file hashes: " + err.Error()
 			return errors.New(msg)
@@ -101,7 +101,7 @@ func (c Client) AwaitSync(portNum int) error {
 		msg := "unable to hash directory: " + err.Error()
 		return errors.New(msg)
 	}
-	err = c.Sock.SendFileHashes(hashes)
+	err = c.Sock.SendGenericData(hashes)
 	if err != nil {
 		msg := "unable to send file hashes: " + err.Error()
 		return errors.New(msg)

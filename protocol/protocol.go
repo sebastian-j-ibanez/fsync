@@ -5,8 +5,6 @@ import (
 	"errors"
 	"net"
 	"os"
-
-	dir "github.com/sebastian-j-ibanez/fsync/directory"
 )
 
 const (
@@ -25,6 +23,7 @@ type Packet struct {
 	Body     []byte
 }
 
+// Initialize socket handler with connection
 func NewSocketHandler(conn net.Conn) SocketHandler {
 	var s SocketHandler
 	if conn != nil {
@@ -129,13 +128,12 @@ func (s *SocketHandler) DownloadFile(path string) error {
 	return nil
 }
 
-// Send slice of file hashes over socket
-func (s *SocketHandler) SendFileHashes(hashes []dir.FileHash) error {
-	// gob.Register([]dir.FileHash{})
+// Send generic data over socket
+func (s *SocketHandler) SendGenericData(data any) error {
 	if s.Enc == nil {
 		return errors.New("socket encoder uninitialized")
 	}
-	err := s.Enc.Encode(hashes)
+	err := s.Enc.Encode(data)
 	if err != nil {
 		return err
 	}
@@ -143,19 +141,17 @@ func (s *SocketHandler) SendFileHashes(hashes []dir.FileHash) error {
 	return nil
 }
 
-// Receive slice of file hashes from socket
-func (s *SocketHandler) ReceiveFileHashes() ([]dir.FileHash, error) {
-	//gob.Register([]dir.FileHash{})
-	hashes := []dir.FileHash{}
+// Receive generic data from socket
+func (s *SocketHandler) ReceiveGenericData(data any) error {
 	if s.Dec == nil {
-		return nil, errors.New("socket decoder uninitialized")
+		return errors.New("socket decoder uninitialized")
 	}
-	err := s.Dec.Decode(&hashes)
+	err := s.Dec.Decode(data)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return hashes, nil
+	return nil
 }
 
 // Calculate number of packets based on file size
