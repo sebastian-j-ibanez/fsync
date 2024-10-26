@@ -29,8 +29,12 @@ Listens over all network interfaces on port 2000 by default.`,
 		var err error
 		if portFlag != "" {
 			port, err = strconv.Atoi(portFlag)
+			if port <= 0 {
+				fmt.Fprintf(os.Stderr, "fsync: error: port must be greater than 0\n")
+				os.Exit(-1)
+			}
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "fsync: ERROR: cannot convert arg to port\n")
+				fmt.Fprintf(os.Stderr, "fsync: error: cannot convert arg to port\n")
 				os.Exit(-1)
 			}
 		}
@@ -40,7 +44,7 @@ Listens over all network interfaces on port 2000 by default.`,
 		if scanFlag {
 			go func() {
 				if err := client.BroadcastMDNSService(port, endBroadcast); err != nil {
-					fmt.Fprintf(os.Stderr, "fsync: ERROR: %s", err.Error())
+					fmt.Fprintf(os.Stderr, "fsync: error: %s", err.Error())
 					os.Exit(-1)
 				}
 			}()
@@ -49,13 +53,13 @@ Listens over all network interfaces on port 2000 by default.`,
 		// Init dir manager
 		path, err := os.Getwd()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "fsync: ERROR: %v\n", err)
+			fmt.Fprintf(os.Stderr, "fsync: error: %v\n", err)
 			os.Exit(-1)
 		}
 
 		d, err := dir.NewDirManager(path)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "fsync: ERROR: %v\n", err)
+			fmt.Fprintf(os.Stderr, "fsync: error: %v\n", err)
 			os.Exit(-1)
 		}
 
@@ -65,17 +69,17 @@ Listens over all network interfaces on port 2000 by default.`,
 		}
 
 		// Await sync
-		fmt.Printf("listening over port %d...\n", port)
+		fmt.Printf("Listening over port %d...\n", port)
 		err = c.AwaitSync(port)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "fsync: ERROR: %v\n", err)
+			fmt.Fprintf(os.Stderr, "fsync: error: %v\n", err)
 			os.Exit(-1)
 		}
 
 		// End broadcast
 		endBroadcast <- true
 
-		fmt.Printf("sync completed successfully!\n")
+		fmt.Printf("Sync completed successfully!\n")
 	},
 }
 

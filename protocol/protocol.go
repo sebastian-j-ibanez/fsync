@@ -3,8 +3,12 @@ package protocol
 import (
 	"encoding/gob"
 	"errors"
+	"fmt"
 	"net"
 	"os"
+	"time"
+
+	"github.com/sebastian-j-ibanez/fsync/status"
 )
 
 const (
@@ -49,15 +53,32 @@ func (s SocketHandler) UploadFile(path string) error {
 		return err
 	}
 
-	// Calculate and send file size
-	fileSize := fileStat.Size()
-	pktNum := CalculatePktNum(fileSize)
+	fmt.Printf("Sending %s\n", file.Name())
+
 	if s.Enc == nil {
 		return errors.New("socket encoder uninitialized")
 	}
+
+	// Calculate and send file size
+	fileSize := fileStat.Size()
+	err = s.Enc.Encode(fileSize)
+	if err != nil {
+		return err
+	}
+
+	// Calculate and send number of packets
+	pktNum := CalculatePktNum(fileSize)
 	err = s.Enc.Encode(pktNum)
 	if err != nil {
 		return err
+	}
+
+	// Write incoming packets to file
+	progress := status.Progress{
+		TimeElapsed:    time.Now().Unix(),
+		Percentage:     0,
+		TotalFileBytes: fileSize,
+		BytesReceived:  0,
 	}
 
 	// Iterate over file, read data, send data in packet
@@ -88,8 +109,12 @@ func (s SocketHandler) UploadFile(path string) error {
 		if err != nil {
 			return err
 		}
+
+		progress.BytesReceived += int64(bytesRead)
+		progress.DisplayProgress()
 	}
 
+	fmt.Println()
 	return nil
 }
 
@@ -100,31 +125,49 @@ func (s *SocketHandler) DownloadFile(path string) error {
 		return err
 	}
 
-	// Get number of incoming packets
-	var pktNum int64
 	if s.Dec == nil {
 		return errors.New("socket decoder uninitialized")
 	}
-	err = s.Dec.Decode(&pktNum)
+
+	// Get file size
+	var fileSize int64
+	err = s.Dec.Decode(&fileSize)
 	if err != nil {
 		return err
 	}
 
+	// Get number of incoming packets
+	var totalPackets int64
+	err = s.Dec.Decode(&totalPackets)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Downloading %s\n", file.Name())
+
 	// Write incoming packets to file
-	offset := int64(0)
-	for range pktNum {
+	progress := status.Progress{
+		TimeElapsed:    time.Now().Unix(),
+		Percentage:     0,
+		TotalFileBytes: fileSize,
+		BytesReceived:  0,
+	}
+
+	for range totalPackets {
 		var tempPkt Packet
 		err = s.Dec.Decode(&tempPkt)
 		if err != nil {
 			return err
 		}
-		bytesWritten, err := file.WriteAt(tempPkt.Body, offset)
+		bytesWritten, err := file.WriteAt(tempPkt.Body, progress.BytesReceived)
 		if err != nil {
 			return err
 		}
-		offset += int64(bytesWritten)
+		progress.BytesReceived += int64(bytesWritten)
+		progress.DisplayProgress()
 	}
 
+	fmt.Println()
 	return nil
 }
 

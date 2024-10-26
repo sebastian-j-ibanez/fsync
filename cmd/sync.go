@@ -76,6 +76,8 @@ Uses list of peers unless port flag is specified.`,
 			fmt.Fprintf(os.Stderr, "fsync: ERROR: %v\n", err)
 			os.Exit(-1)
 		}
+
+		fmt.Println("Sync completed successfully!")
 	},
 }
 

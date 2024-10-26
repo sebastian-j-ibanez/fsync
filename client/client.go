@@ -24,13 +24,6 @@ type Client struct {
 
 // Init sync with peers
 func (c Client) InitSync() error {
-	var err error
-	cltHashes, err := c.DirMan.HashDir()
-	if err != nil {
-		msg := "unable to hash directory: " + err.Error()
-		return errors.New(msg)
-	}
-
 	for _, peer := range c.Peers {
 		// Connect to peer, init socket
 		conn, err := net.Dial("tcp", peer.Addr())
@@ -48,16 +41,23 @@ func (c Client) InitSync() error {
 			return errors.New(msg)
 		}
 
+		// Get local file hashes
+		localHashes, err := c.DirMan.HashDir()
+		if err != nil {
+			msg := "unable to hash directory: " + err.Error()
+			return errors.New(msg)
+		}
+
 		// Send unique file hashes
-		uniqueFiles := dir.GetUniqueHashes(cltHashes, peerHashes)
+		uniqueFiles := dir.GetUniqueHashes(localHashes, peerHashes)
 		err = c.Sock.SendGenericData(*uniqueFiles)
 		if err != nil {
 			msg := "unable to send file hashes: " + err.Error()
 			return errors.New(msg)
 		}
 
-		// Upload unique files
 		for _, file := range *uniqueFiles {
+			// Send file packets
 			path := c.DirMan.Path + "/" + file.Name
 			err = c.Sock.UploadFile(path)
 			if err != nil {
@@ -73,12 +73,11 @@ func (c Client) InitSync() error {
 // Await sync from peer over default port
 func (c Client) AwaitSync(portNum int) error {
 	// Set port
-	if portNum == 0 {
+	if portNum == -1 {
 		portNum = defaultPort
 	}
 	port := ": " + strconv.Itoa(portNum)
 
-	var err error
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		return err
@@ -116,9 +115,9 @@ func (c Client) AwaitSync(portNum int) error {
 		return errors.New(msg)
 	}
 
-	// Download unique files
 	for _, file := range uniqueHashes {
-		err := c.Sock.DownloadFile(file.Name)
+		// Receive file packets
+		err = c.Sock.DownloadFile(file.Name)
 		if err != nil {
 			msg := "unable to download " + file.Name + ": " + err.Error()
 			return errors.New(msg)

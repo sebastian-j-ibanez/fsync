@@ -3,7 +3,6 @@ package directory
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"os"
 )
 
@@ -25,7 +24,7 @@ func NewDirManager(path string) (*DirManager, error) {
 	d := &DirManager{
 		Path: path,
 	}
-	
+
 	return d, nil
 }
 
@@ -68,10 +67,10 @@ func (d DirManager) HashDir() ([]FileHash, error) {
 			// Hash raw file data
 			hash := sha256.Sum256(fileData)
 			encodedHash := hex.EncodeToString(hash[:])
-			hashes = append(hashes, FileHash{ name, encodedHash })
+			hashes = append(hashes, FileHash{name, encodedHash})
 		}
 	}
-	
+
 	return hashes, err
 }
 
@@ -84,7 +83,7 @@ func GetUniqueHashes(hashesA []FileHash, hashesB []FileHash) *[]FileHash {
 			*sharedHashes = append(*sharedHashes, hash)
 		}
 	}
-	
+
 	return sharedHashes
 }
 
@@ -95,25 +94,4 @@ func containsHash(hashes []FileHash, hash FileHash) bool {
 		}
 	}
 	return false
-}
-
-// Convert byte slice into smaller evenly-sized byte slices (taking into account leftover any bytes)
-func chunkBuffer(buffer []byte, chunkSize int) ([][]byte, error) {
-	if chunkSize <= 0 {
-		return nil, errors.New("chunk size must be greater than 0")
-	}
-
-	var chunks [][]byte
-	dataLen := len(buffer)
-
-	// Iterate over the data and split it into chunks
-	for start := 0; start < dataLen; start += chunkSize {
-		end := start + chunkSize
-		if end > dataLen {
-			end = dataLen
-		}
-		chunks = append(chunks, buffer[start:end])
-	}
-	
-	return chunks, nil
 }
