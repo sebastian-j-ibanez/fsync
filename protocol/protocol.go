@@ -114,6 +114,7 @@ func (s SocketHandler) UploadFile(path string) error {
 		progress.DisplayProgress()
 	}
 
+	fmt.Println()
 	return nil
 }
 
