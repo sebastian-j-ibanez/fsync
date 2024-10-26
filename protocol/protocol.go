@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"time"
 
 	"github.com/sebastian-j-ibanez/fsync/status"
 )
@@ -52,6 +53,8 @@ func (s SocketHandler) UploadFile(path string) error {
 		return err
 	}
 
+	fmt.Printf("Sending %s\n", file.Name())
+
 	if s.Enc == nil {
 		return errors.New("socket encoder uninitialized")
 	}
@@ -68,6 +71,14 @@ func (s SocketHandler) UploadFile(path string) error {
 	err = s.Enc.Encode(pktNum)
 	if err != nil {
 		return err
+	}
+
+	// Write incoming packets to file
+	progress := status.Progress{
+		TimeElapsed:    time.Now().Unix(),
+		Percentage:     0,
+		TotalFileBytes: fileSize,
+		BytesReceived:  0,
 	}
 
 	// Iterate over file, read data, send data in packet
@@ -98,6 +109,9 @@ func (s SocketHandler) UploadFile(path string) error {
 		if err != nil {
 			return err
 		}
+
+		progress.BytesReceived += int64(bytesRead)
+		progress.DisplayProgress()
 	}
 
 	return nil
@@ -131,22 +145,28 @@ func (s *SocketHandler) DownloadFile(path string) error {
 	fmt.Printf("Downloading %s\n", file.Name())
 
 	// Write incoming packets to file
-	bytesReceived := int64(0)
+	progress := status.Progress{
+		TimeElapsed:    time.Now().Unix(),
+		Percentage:     0,
+		TotalFileBytes: fileSize,
+		BytesReceived:  0,
+	}
+
 	for range totalPackets {
 		var tempPkt Packet
 		err = s.Dec.Decode(&tempPkt)
 		if err != nil {
 			return err
 		}
-		bytesWritten, err := file.WriteAt(tempPkt.Body, bytesReceived)
+		bytesWritten, err := file.WriteAt(tempPkt.Body, progress.BytesReceived)
 		if err != nil {
 			return err
 		}
-		bytesReceived += int64(bytesWritten)
-		//fmt.Printf("Bytes received: %d, total bytes: %d\n", bytesReceived, fileSize)
-		status.PrintLoadingBar(bytesReceived, fileSize)
+		progress.BytesReceived += int64(bytesWritten)
+		progress.DisplayProgress()
 	}
 
+	fmt.Println()
 	return nil
 }
 

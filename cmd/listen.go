@@ -69,7 +69,7 @@ Listens over all network interfaces on port 2000 by default.`,
 		}
 
 		// Await sync
-		fmt.Printf("listening over port %d...\n", port)
+		fmt.Printf("Listening over port %d...\n", port)
 		err = c.AwaitSync(port)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "fsync: error: %v\n", err)
@@ -79,7 +79,7 @@ Listens over all network interfaces on port 2000 by default.`,
 		// End broadcast
 		endBroadcast <- true
 
-		fmt.Printf("sync completed successfully!\n")
+		fmt.Printf("Sync completed successfully!\n")
 	},
 }
 
