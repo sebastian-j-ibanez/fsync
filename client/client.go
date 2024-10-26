@@ -41,7 +41,8 @@ func (c Client) InitSync() error {
 		c.Sock = prot.NewSocketHandler(conn)
 
 		// Get peer file hashes
-		peerHashes, err := c.Sock.ReceiveFileHashes()
+		var peerHashes []dir.FileHash
+		err = c.Sock.ReceiveGenericData(&peerHashes)
 		if err != nil {
 			msg := "unable to receive file hashes: " + err.Error()
 			return errors.New(msg)
@@ -108,7 +109,8 @@ func (c Client) AwaitSync(portNum int) error {
 	}
 
 	// Receive unique file hashes
-	uniqueHashes, err := c.Sock.ReceiveFileHashes()
+	var uniqueHashes []dir.FileHash
+	err = c.Sock.ReceiveGenericData(&uniqueHashes)
 	if err != nil {
 		msg := "unable to receive file hashes: " + err.Error()
 		return errors.New(msg)
