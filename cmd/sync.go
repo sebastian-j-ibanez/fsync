@@ -83,6 +83,6 @@ Uses list of peers unless port flag is specified.`,
 
 func init() {
 	rootCmd.AddCommand(syncCmd)
-	syncCmd.PersistentFlags().String("peer", "", "specify IP for sync")
-	syncCmd.PersistentFlags().Bool("scan", false, "scan network for peer")
+	syncCmd.PersistentFlags().StringP("peer", "p", "", "specify IP for sync")
+	syncCmd.PersistentFlags().BoolP("scan", "s", false, "scan network for peer")
 }
