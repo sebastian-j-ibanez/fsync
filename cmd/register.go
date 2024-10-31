@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strconv"
+	"strings"
 
 	prot "github.com/sebastian-j-ibanez/fsync/protocol"
 	"github.com/spf13/cobra"
@@ -21,23 +21,34 @@ var registerCmd = &cobra.Command{
 	Program will ask for IP and then port.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var ip string
-		var port uint16
-		fmt.Println("please enter the peer IP address: ")
-		fmt.Scanln(&ip)
-		if net.ParseIP(ip) == nil {
-			fmt.Fprintf(os.Stderr, "fsync: ERROR: invalid ip\n")
+		var port string
+
+		if len(args) < 1 {
+			fmt.Fprintf(os.Stderr, "fsync: error: expected <IP:PORT>\n")
 			os.Exit(-1)
 		}
 
-		fmt.Println("please enter the peer port number: ")
-		fmt.Scan(&port)
+		// Split the port from the IP (IP:PORT)
+		argParts := strings.Split(args[0], ":")
+		if len(argParts) < 2 || argParts[0] == "" || argParts[1] == "" {
+			fmt.Fprintf(os.Stderr, "fsync: error: expected <IP:PORT>\n")
+			os.Exit(-1)
+		}
+		ip = argParts[0]
+		port = argParts[1]
+
+		if net.ParseIP(ip) == nil {
+			fmt.Fprintf(os.Stderr, "fsync: error: invalid ip\n")
+			os.Exit(-1)
+		}
+
 		peer := prot.Peer{
 			IP:   ip,
-			Port: strconv.FormatUint(uint64(port), 10),
+			Port: port,
 		}
 		err := prot.RegisterPeer(peer)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "fsync: ERROR: unable to register peer\n")
+			fmt.Fprintf(os.Stderr, "fsync: error: unable to register peer\n")
 			os.Exit(-1)
 		}
 	},
