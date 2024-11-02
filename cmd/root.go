@@ -12,9 +12,8 @@ import (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "fsync",
-	Short: "A peer to peer file syncing program",
-	Long: `fsync is a peer to peer file syncing program.
-It is designed to update a directory between two computers.`,
+	Short: "A P2P file syncing program",
+	Long:  `fsync is a P2P file syncing program.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	//Run: func(cmd *cobra.Command, args []string) {},
