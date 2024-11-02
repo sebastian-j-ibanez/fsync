@@ -16,9 +16,8 @@ import (
 // listenCmd represents the listen command
 var listenCmd = &cobra.Command{
 	Use:   "listen",
-	Short: "Listen over a socket connection",
-	Long: `Listen over a socket connection for a sync request.
-Listens over all network interfaces on port 2000 by default.`,
+	Short: "Listen for sync requests",
+	Long:  `Listens for a sync request over a socket connection on port 2000.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Get flags
 		portFlag, _ := cmd.Flags().GetString("port")
@@ -85,6 +84,6 @@ Listens over all network interfaces on port 2000 by default.`,
 
 func init() {
 	rootCmd.AddCommand(listenCmd)
+	listenCmd.PersistentFlags().BoolP("scan", "s", true, "scan network for peer")
 	listenCmd.PersistentFlags().StringP("port", "p", "2000", "specify the port")
-	listenCmd.PersistentFlags().BoolP("scan", "s", false, "scan network for peer")
 }
