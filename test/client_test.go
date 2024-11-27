@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/sebastian-j-ibanez/fsync/client"
 	clt "github.com/sebastian-j-ibanez/fsync/client"
 	dir "github.com/sebastian-j-ibanez/fsync/directory"
 	prot "github.com/sebastian-j-ibanez/fsync/protocol"
@@ -99,4 +100,68 @@ func Test4_RegisterPeer(t *testing.T) {
 	}
 	prot.RegisterPeer(p)
 	fmt.Println("registered default peer.")
+}
+
+func Test5_Serialize(t *testing.T) {
+	var p prot.Packet
+	var hashes []dir.FileHash
+	err := p.SerializeToBody(hashes, prot.FileHashes)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func Test6_SendAndReceivePacket(t *testing.T) {
+	port := 1111
+	endBroadcast := make(chan bool)
+	go func() {
+		if err := client.BroadcastMDNSService(port, endBroadcast); err != nil {
+			os.Exit(-1)
+		}
+	}()
+	go RunServer()
+
+	peer, err := client.DiscoverMDNSService()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	c, err := NewClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.Peers = append(c.Peers, peer)
+
+	err = c.InitSync()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func RunServer() {
+	c, err := NewClient()
+	if err != nil {
+		os.Exit(-1)
+	}
+
+	err = c.InitSync()
+	if err != nil {
+		os.Exit(-1)
+	}
+}
+
+func NewClient() (clt.Client, error) {
+	path, err := os.Getwd()
+	if err != nil {
+		return clt.Client{}, err
+	}
+	d, err := dir.NewDirManager(path)
+	if err != nil {
+		return clt.Client{}, err
+	}
+	c := clt.Client{
+		DirMan: *d,
+	}
+
+	return c, nil
 }
