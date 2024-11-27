@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/cloudflare/circl/hpke"
 	"github.com/sebastian-j-ibanez/fsync/status"
 )
 
@@ -17,28 +18,43 @@ const (
 )
 
 type SocketHandler struct {
-	Conn net.Conn
-	Enc  *gob.Encoder
-	Dec  *gob.Decoder
-}
-
-type Packet struct {
-	OrderNum int64
-	Body     []byte
+	Conn   net.Conn
+	Enc    *gob.Encoder
+	Dec    *gob.Decoder
+	Opener hpke.Opener
+	Sealer hpke.Sealer
 }
 
 // Initialize socket handler with connection
-func NewSocketHandler(conn net.Conn) SocketHandler {
+func NewSocketHandler(conn net.Conn, listenFlag bool) (SocketHandler, error) {
 	var s SocketHandler
-	if conn != nil {
-		s.Conn = conn
-		s.Enc = gob.NewEncoder(conn)
-		s.Dec = gob.NewDecoder(conn)
-	} else {
-		s.Conn, s.Enc, s.Dec = nil, nil, nil
+
+	if conn == nil {
+		return SocketHandler{}, errors.New("connection is nil")
 	}
 
-	return s
+	// Initialize socket connection
+	s.Conn = conn
+	s.Enc = gob.NewEncoder(conn)
+	s.Dec = gob.NewDecoder(conn)
+
+	if listenFlag {
+		opener, sealer, err := s.setupServerEncryption()
+		if err != nil {
+			return SocketHandler{}, err
+		}
+		s.Opener = opener
+		s.Sealer = sealer
+	} else {
+		opener, sealer, err := s.setupClientEncryption()
+		if err != nil {
+			return SocketHandler{}, err
+		}
+		s.Opener = opener
+		s.Sealer = sealer
+	}
+
+	return s, nil
 }
 
 // Open file at path and stream file over socket connection
@@ -61,14 +77,26 @@ func (s SocketHandler) UploadFile(path string) error {
 
 	// Calculate and send file size
 	fileSize := fileStat.Size()
-	err = s.Enc.Encode(fileSize)
+	var fileSizePkt Packet
+	err = fileSizePkt.SerializeToBody(fileSize, Int64)
+	if err != nil {
+		return err
+	}
+
+	err = s.SendEncryptedPacket(fileSizePkt)
 	if err != nil {
 		return err
 	}
 
 	// Calculate and send number of packets
 	pktNum := CalculatePktNum(fileSize)
-	err = s.Enc.Encode(pktNum)
+	var pktNumPkt Packet
+	err = pktNumPkt.SerializeToBody(pktNum, Int64)
+	if err != nil {
+		return err
+	}
+
+	err = s.SendEncryptedPacket(pktNumPkt)
 	if err != nil {
 		return err
 	}
@@ -105,7 +133,7 @@ func (s SocketHandler) UploadFile(path string) error {
 			OrderNum: i,
 			Body:     data,
 		}
-		err = s.Enc.Encode(tempPkt)
+		err = s.SendEncryptedPacket(tempPkt)
 		if err != nil {
 			return err
 		}
@@ -131,14 +159,14 @@ func (s *SocketHandler) DownloadFile(path string) error {
 
 	// Get file size
 	var fileSize int64
-	err = s.Dec.Decode(&fileSize)
+	err = s.ReceiveEncryptedData(&fileSize, Int64)
 	if err != nil {
 		return err
 	}
 
 	// Get number of incoming packets
 	var totalPackets int64
-	err = s.Dec.Decode(&totalPackets)
+	err = s.ReceiveEncryptedData(&totalPackets, Int64)
 	if err != nil {
 		return err
 	}
@@ -155,7 +183,7 @@ func (s *SocketHandler) DownloadFile(path string) error {
 
 	for range totalPackets {
 		var tempPkt Packet
-		err = s.Dec.Decode(&tempPkt)
+		err = s.ReceiveEncryptedPacket(&tempPkt)
 		if err != nil {
 			return err
 		}
@@ -172,11 +200,19 @@ func (s *SocketHandler) DownloadFile(path string) error {
 }
 
 // Send generic data over socket
-func (s *SocketHandler) SendGenericData(data any) error {
+func (s *SocketHandler) SendEncryptedPacket(pkt Packet) error {
 	if s.Enc == nil {
 		return errors.New("socket encoder uninitialized")
 	}
-	err := s.Enc.Encode(data)
+
+	ct, err := s.Sealer.Seal(pkt.Body, nil)
+	if err != nil {
+		return nil
+	}
+
+	pkt.Body = ct
+
+	err = s.Enc.Encode(pkt)
 	if err != nil {
 		return err
 	}
@@ -184,12 +220,41 @@ func (s *SocketHandler) SendGenericData(data any) error {
 	return nil
 }
 
-// Receive generic data from socket
-func (s *SocketHandler) ReceiveGenericData(data any) error {
+// Receive encrypted packet from socket, write to pkt
+func (s *SocketHandler) ReceiveEncryptedPacket(pkt *Packet) error {
 	if s.Dec == nil {
 		return errors.New("socket decoder uninitialized")
 	}
-	err := s.Dec.Decode(data)
+
+	err := s.Dec.Decode(&pkt)
+	if err != nil {
+		return err
+	}
+
+	pt, err := s.Opener.Open(pkt.Body, nil)
+	if err != nil {
+		return err
+	}
+
+	pkt.Body = pt
+
+	return nil
+}
+
+// Receive encrypted data and deserialize
+func (s *SocketHandler) ReceiveEncryptedData(data interface{}, pktType PacketType) error {
+	var pkt Packet
+	err := s.ReceiveEncryptedPacket(&pkt)
+	if err != nil {
+		return err
+	}
+
+	if pkt.Type != pktType {
+		msg := fmt.Sprintf("packet type mismatch: expected %d, received %d", pkt.Type, pktType)
+		return errors.New(msg)
+	}
+
+	err = pkt.DeserializeBody(data)
 	if err != nil {
 		return err
 	}
