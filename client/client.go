@@ -36,7 +36,7 @@ func (c Client) AwaitSync(portNum int) error {
 		return err
 	}
 
-	fmt.Printf("Listening over port %s...\n", port)
+	fmt.Printf("Listening over port %d...\n", portNum)
 
 	// Accept peer connection
 	conn, err := lis.Accept()

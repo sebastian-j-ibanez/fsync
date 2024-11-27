@@ -68,7 +68,6 @@ var listenCmd = &cobra.Command{
 		}
 
 		// Await sync
-		fmt.Printf("Listening over port %d...\n", port)
 		err = c.AwaitSync(port)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "fsync: error: %v\n", err)
