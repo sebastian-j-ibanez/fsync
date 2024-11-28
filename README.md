@@ -7,16 +7,16 @@
 **fsync** is a CLI tool designed to sync files between devices. The protocol is entirely P2P, eliminating the need for a server or cloud instance.
 
 ## Example
-Sync the ~/Pictures directory between two computers on a private network (Computer B has the pictures):
+To sync pictures from computer b -> computer a (on the same network):
 ### Computer A
 ```
 cd ~/Pictures
-fsync listen --scan
+fsync listen
 ```
 ### Computer B
 ```
 cd ~/Pictures
-fsync sync --scan
+fsync sync
 ```
 ## Use Cases
 - Sync wallpapers between devices
