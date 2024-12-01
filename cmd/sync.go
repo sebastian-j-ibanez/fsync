@@ -38,7 +38,7 @@ Uses list of peers unless port flag is specified.`,
 
 		addrFlag, _ := cmd.Flags().GetString("address")
 		peersFlag, _ := cmd.Flags().GetString("peers")
-
+		
 		// Flag cases:
 		// 1. Peer flag (use specific ip)
 		// 2. Peers flag (use peer list saved in JSON)
@@ -68,10 +68,10 @@ Uses list of peers unless port flag is specified.`,
 				os.Exit(-1)
 			}
 			c.Peers = append(c.Peers, peer)
-		}
-
+		}	
+		
 		// Init sync
-		err = c.InitSync()
+		err = c.InitSync(args[0])
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "fsync: error: %v\n", err)
 			os.Exit(-1)

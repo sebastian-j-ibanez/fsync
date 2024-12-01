@@ -22,7 +22,7 @@ var listenCmd = &cobra.Command{
 		// Get flags
 		portFlag, _ := cmd.Flags().GetString("port")
 		scanFlag, _ := cmd.Flags().GetBool("scan")
-
+		
 		// Handle port flag
 		port := 2000
 		var err error
