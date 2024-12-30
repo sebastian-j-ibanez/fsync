@@ -21,15 +21,15 @@ var syncCmd = &cobra.Command{
 	Long: `Send a sync request to peer clients.
 Uses list of peers unless port flag is specified.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// Init directory manager amd client
+		// Init directory manager and client
 		path, err := os.Getwd()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "fsync: error: %v\n", err)
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(-1)
 		}
 		d, err := dir.NewDirManager(path)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "fsync: error: %v\n", err)
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(-1)
 		}
 		c := client.Client{
@@ -50,30 +50,34 @@ Uses list of peers unless port flag is specified.`,
 				peer.IP = ip.String()
 				peer.Port = "2000"
 			} else {
-				fmt.Fprintf(os.Stderr, "fsync: error: invalid peer ip: %s\n", addrFlag)
+				fmt.Fprintf(os.Stderr, "error: invalid peer ip: %s\n", addrFlag)
 				os.Exit(-1)
 			}
 			c.Peers = []prot.Peer{peer}
 		} else if peersFlag != "" {
 			c.Peers, err = prot.GetPeers()
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "fsync: error: unable to get peers: %v\n", err)
+				fmt.Fprintf(os.Stderr, "error: unable to get peers: %v\n", err)
 				os.Exit(-1)
 			}
 		} else {
 			// Scan for peer
 			peer, err := client.DiscoverMDNSService()
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "fsync: error: %v\n", err)
+				fmt.Fprintf(os.Stderr, "error: %v\n", err)
 				os.Exit(-1)
 			}
 			c.Peers = append(c.Peers, peer)
 		}
 
 		// Init sync
-		err = c.InitSync()
+		filePattern := ""
+		if len(args) > 0 {
+			filePattern = args[0]
+		}
+		err = c.InitSync(filePattern)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "fsync: error: %v\n", err)
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(-1)
 		}
 
