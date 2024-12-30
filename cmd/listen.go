@@ -29,11 +29,11 @@ var listenCmd = &cobra.Command{
 		if portFlag != "" {
 			port, err = strconv.Atoi(portFlag)
 			if port <= 0 {
-				fmt.Fprintf(os.Stderr, "fsync: error: port must be greater than 0\n")
+				fmt.Fprintf(os.Stderr, "error: port must be greater than 0\n")
 				os.Exit(-1)
 			}
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "fsync: error: cannot convert arg to port\n")
+				fmt.Fprintf(os.Stderr, "error: cannot convert arg to port\n")
 				os.Exit(-1)
 			}
 		}
@@ -43,7 +43,7 @@ var listenCmd = &cobra.Command{
 		if scanFlag {
 			go func() {
 				if err := client.BroadcastMDNSService(port, endBroadcast); err != nil {
-					fmt.Fprintf(os.Stderr, "fsync: error: %s", err.Error())
+					fmt.Fprintf(os.Stderr, "error: %s", err.Error())
 					os.Exit(-1)
 				}
 			}()
@@ -52,13 +52,13 @@ var listenCmd = &cobra.Command{
 		// Init dir manager
 		path, err := os.Getwd()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "fsync: error: %v\n", err)
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(-1)
 		}
 
 		d, err := dir.NewDirManager(path)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "fsync: error: %v\n", err)
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(-1)
 		}
 
@@ -70,7 +70,7 @@ var listenCmd = &cobra.Command{
 		// Await sync
 		err = c.AwaitSync(port)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "fsync: error: %v\n", err)
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(-1)
 		}
 
