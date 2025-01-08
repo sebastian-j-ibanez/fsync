@@ -93,7 +93,11 @@ func (d DirManager) getAllFileHashes() ([]FileHash, error) {
 // Get hashes of files that math glob pattern in directory
 func (d DirManager) getGlobPatternFileHashes(filePattern string) ([]FileHash, error) {
 	var hashes []FileHash
-	var err error
+
+	if strings.Contains(filePattern, "..") {
+		err := errors.New("invalid glob pattern: '..' is not allowed")
+		return nil, err
+	}
 
 	g := glob.MustCompile(filePattern)
 
