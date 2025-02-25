@@ -69,7 +69,7 @@ func (s SocketHandler) UploadFile(path string) error {
 		return err
 	}
 
-	fmt.Printf("Sending %s\n", file.Name())
+	fmt.Printf("Sending \033[1m%s\033[0m\n", file.Name())
 
 	if s.Enc == nil {
 		return errors.New("socket encoder uninitialized")
@@ -142,7 +142,7 @@ func (s SocketHandler) UploadFile(path string) error {
 		progress.DisplayProgress()
 	}
 
-	fmt.Println()
+	fmt.Print("\n\n")
 	return nil
 }
 
@@ -171,7 +171,7 @@ func (s *SocketHandler) DownloadFile(path string) error {
 		return err
 	}
 
-	fmt.Printf("Downloading %s\n", file.Name())
+	fmt.Printf("Downloading \033[1m%s\033[0m\n", file.Name())
 
 	// Write incoming packets to file
 	progress := status.Progress{
@@ -195,7 +195,7 @@ func (s *SocketHandler) DownloadFile(path string) error {
 		progress.DisplayProgress()
 	}
 
-	fmt.Println()
+	fmt.Print("\n\n")
 	return nil
 }
 
