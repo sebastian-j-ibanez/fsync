@@ -7,7 +7,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/sebastian-j-ibanez/fsync/client"
 	clt "github.com/sebastian-j-ibanez/fsync/client"
 	dir "github.com/sebastian-j-ibanez/fsync/directory"
 	prot "github.com/sebastian-j-ibanez/fsync/protocol"
@@ -80,7 +79,8 @@ func Test3_InitSync(t *testing.T) {
 	}
 
 	// Init sync with peer
-	err = c.InitSync()
+	files := []string{}
+	err = c.InitSync(files)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,13 +115,13 @@ func Test6_SendAndReceivePacket(t *testing.T) {
 	port := 1111
 	endBroadcast := make(chan bool)
 	go func() {
-		if err := client.BroadcastMDNSService(port, endBroadcast); err != nil {
+		if err := clt.BroadcastMDNSService(port, endBroadcast); err != nil {
 			os.Exit(-1)
 		}
 	}()
 	go RunServer()
 
-	peer, err := client.DiscoverMDNSService()
+	peer, err := clt.DiscoverMDNSService()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,7 +132,8 @@ func Test6_SendAndReceivePacket(t *testing.T) {
 	}
 	c.Peers = append(c.Peers, peer)
 
-	err = c.InitSync()
+	files := []string{}
+	err = c.InitSync(files)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -144,7 +145,8 @@ func RunServer() {
 		os.Exit(-1)
 	}
 
-	err = c.InitSync()
+	files := []string{}
+	err = c.InitSync(files)
 	if err != nil {
 		os.Exit(-1)
 	}

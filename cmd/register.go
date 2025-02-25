@@ -24,21 +24,21 @@ var registerCmd = &cobra.Command{
 		var port string
 
 		if len(args) < 1 {
-			fmt.Fprintf(os.Stderr, "fsync: error: expected <IP:PORT>\n")
+			fmt.Fprintf(os.Stderr, "error: expected <IP:PORT>\n")
 			os.Exit(-1)
 		}
 
 		// Split the port from the IP (IP:PORT)
 		argParts := strings.Split(args[0], ":")
 		if len(argParts) < 2 || argParts[0] == "" || argParts[1] == "" {
-			fmt.Fprintf(os.Stderr, "fsync: error: expected <IP:PORT>\n")
+			fmt.Fprintf(os.Stderr, "error: expected <IP:PORT>\n")
 			os.Exit(-1)
 		}
 		ip = argParts[0]
 		port = argParts[1]
 
 		if net.ParseIP(ip) == nil {
-			fmt.Fprintf(os.Stderr, "fsync: error: invalid ip\n")
+			fmt.Fprintf(os.Stderr, "error: invalid ip\n")
 			os.Exit(-1)
 		}
 
@@ -48,7 +48,7 @@ var registerCmd = &cobra.Command{
 		}
 		err := prot.RegisterPeer(peer)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "fsync: error: unable to register peer\n")
+			fmt.Fprintf(os.Stderr, "error: unable to register peer\n")
 			os.Exit(-1)
 		}
 	},

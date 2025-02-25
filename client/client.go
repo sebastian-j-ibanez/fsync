@@ -53,7 +53,8 @@ func (c Client) AwaitSync(portNum int) error {
 	}
 
 	// Get and send file hashes
-	hashes, err := c.DirMan.HashDir()
+	files := []string{}
+	hashes, err := c.DirMan.GetFileHashes(files) // Empty slice will get all file hashes
 	if err != nil {
 		msg := "unable to hash directory: " + err.Error()
 		return errors.New(msg)
@@ -90,7 +91,14 @@ func (c Client) AwaitSync(portNum int) error {
 }
 
 // Init sync with peers
-func (c Client) InitSync() error {
+func (c Client) InitSync(filePattern []string) error {
+	// Get file hashes
+	localHashes, err := c.DirMan.GetFileHashes(filePattern)
+	if err != nil {
+		msg := "unable to hash directory: " + err.Error()
+		return errors.New(msg)
+	}
+
 	for _, peer := range c.Peers {
 		// Connect to peer, init socket
 		conn, err := net.Dial("tcp", peer.Addr())
@@ -102,18 +110,12 @@ func (c Client) InitSync() error {
 		if err != nil {
 			return errors.New("unable to initialize socket handler: " + err.Error())
 		}
+
 		// Get peer file hashes
 		var peerHashes []dir.FileHash
 		err = c.Sock.ReceiveEncryptedData(&peerHashes, prot.FileHashes)
 		if err != nil {
 			msg := "unable to receive file hashes: " + err.Error()
-			return errors.New(msg)
-		}
-
-		// Get local file hashes
-		localHashes, err := c.DirMan.HashDir()
-		if err != nil {
-			msg := "unable to hash directory: " + err.Error()
 			return errors.New(msg)
 		}
 
