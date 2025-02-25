@@ -71,10 +71,11 @@ Uses list of peers unless port flag is specified.`,
 		}
 
 		// Init sync
-		filePattern := ""
+		filePattern := []string{}
 		if len(args) > 0 {
-			filePattern = args[0]
+			filePattern = args
 		}
+
 		err = c.InitSync(filePattern)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)

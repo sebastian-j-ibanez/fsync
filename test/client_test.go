@@ -79,7 +79,8 @@ func Test3_InitSync(t *testing.T) {
 	}
 
 	// Init sync with peer
-	err = c.InitSync("")
+	files := []string{}
+	err = c.InitSync(files)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -131,7 +132,8 @@ func Test6_SendAndReceivePacket(t *testing.T) {
 	}
 	c.Peers = append(c.Peers, peer)
 
-	err = c.InitSync("")
+	files := []string{}
+	err = c.InitSync(files)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,7 +145,8 @@ func RunServer() {
 		os.Exit(-1)
 	}
 
-	err = c.InitSync("")
+	files := []string{}
+	err = c.InitSync(files)
 	if err != nil {
 		os.Exit(-1)
 	}

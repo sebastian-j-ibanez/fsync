@@ -5,9 +5,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"os"
-	"strings"
-
-	"github.com/gobwas/glob"
 )
 
 type DirManager struct {
@@ -53,18 +50,28 @@ func (d DirManager) GetFileNames() ([]string, error) {
 	return names, nil
 }
 
-// Get file hashes. Can be:
-// 1. All files
-// 2. Files that match glob pattern
-// 3. File that matches name
-func (d DirManager) GetFileHashes(filePattern string) ([]FileHash, error) {
-	if filePattern == "" {
+// Get file hashes
+func (d DirManager) GetFileHashes(fileNames []string) ([]FileHash, error) {
+	if len(fileNames) == 0 {
 		return d.getAllFileHashes()
-	} else if isGlobPattern(filePattern) {
-		return d.getGlobPatternFileHashes(filePattern)
-	} else {
-		return d.getSpecificFileHash(filePattern)
 	}
+
+	var hashes []FileHash
+	for _, file := range fileNames {
+		entry, err := d.findFileEntry(file)
+		if err != nil {
+			return nil, err
+		}
+
+		hash, err := d.hashFile(entry)
+		if err != nil {
+			return nil, err
+		}
+
+		hashes = append(hashes, hash)
+	}
+
+	return hashes, nil
 }
 
 // Get hashes of all files in directory
@@ -90,72 +97,14 @@ func (d DirManager) getAllFileHashes() ([]FileHash, error) {
 	return hashes, err
 }
 
-// Get hashes of files that math glob pattern in directory
-func (d DirManager) getGlobPatternFileHashes(filePattern string) ([]FileHash, error) {
-	var hashes []FileHash
-
-	if strings.Contains(filePattern, "..") {
-		err := errors.New("invalid glob pattern: '..' is not allowed")
-		return nil, err
-	}
-
-	g := glob.MustCompile(filePattern)
-
-	dirEntries, err := os.ReadDir(d.Path)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, entry := range dirEntries {
-		entryname := entry.Name()
-		if !entry.IsDir() && g.Match(entryname) {
-			// Open + read file
-			file, err := os.Open(d.Path + "/" + entryname)
-			if err != nil {
-				return nil, err
-			}
-			var fileData []byte
-			file.Read(fileData)
-
-			// Hash raw file data
-			hashBytes := sha256.Sum256(fileData)
-			hash := hex.EncodeToString(hashBytes[:])
-
-			info, err := entry.Info()
-			if err != nil {
-				return nil, err
-			}
-
-			fh := FileHash{
-				Name: entryname,
-				Hash: hash,
-				Size: info.Size(),
-			}
-
-			hashes = append(hashes, fh)
-		}
-	}
-
-	return hashes, err
-}
-
-// Get file hash slice for single file entry
-func (d DirManager) getSpecificFileHash(filePattern string) ([]FileHash, error) {
-	entry, err := d.findFileEntry(filePattern)
-	if err != nil {
-		return nil, err
-	}
-
-	hash, err := d.hashFile(entry)
-	if err != nil {
-		return nil, err
-	}
-
-	return []FileHash{hash}, nil
-}
-
 // Return the SHA256 hash of file
 func (d DirManager) hashFile(entry os.DirEntry) (FileHash, error) {
+	// Get file as DirEntry
+	// entry, err := d.findFileEntry(fileName)
+	// if err != nil {
+	// 	return FileHash{}, err
+	// }
+
 	// Open + read file
 	file, err := os.Open(d.Path + "/" + entry.Name())
 	if err != nil {
@@ -218,9 +167,4 @@ func containsHash(hashes []FileHash, hash FileHash) bool {
 		}
 	}
 	return false
-}
-
-// Check if string is a file glob pattern
-func isGlobPattern(s string) bool {
-	return strings.ContainsAny(s, "*?[]")
 }

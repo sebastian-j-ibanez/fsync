@@ -53,7 +53,8 @@ func (c Client) AwaitSync(portNum int) error {
 	}
 
 	// Get and send file hashes
-	hashes, err := c.DirMan.GetFileHashes("") // "" will get all file hashes
+	files := []string{}
+	hashes, err := c.DirMan.GetFileHashes(files) // Empty slice will get all file hashes
 	if err != nil {
 		msg := "unable to hash directory: " + err.Error()
 		return errors.New(msg)
@@ -90,7 +91,7 @@ func (c Client) AwaitSync(portNum int) error {
 }
 
 // Init sync with peers
-func (c Client) InitSync(filePattern string) error {
+func (c Client) InitSync(filePattern []string) error {
 	// Get file hashes
 	localHashes, err := c.DirMan.GetFileHashes(filePattern)
 	if err != nil {
