@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"os"
+	"slices"
 )
 
 type DirManager struct {
@@ -151,20 +152,10 @@ func GetUniqueHashes(hashesA []FileHash, hashesB []FileHash) *[]FileHash {
 	sharedHashes := new([]FileHash)
 
 	for _, hash := range hashesA {
-		if !containsHash(hashesB, hash) {
+		if !slices.Contains(hashesB, hash) {
 			*sharedHashes = append(*sharedHashes, hash)
 		}
 	}
 
 	return sharedHashes
-}
-
-// Check if a hash is found in a slice of hashes
-func containsHash(hashes []FileHash, hash FileHash) bool {
-	for _, h := range hashes {
-		if h == hash {
-			return true
-		}
-	}
-	return false
 }
