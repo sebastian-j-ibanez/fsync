@@ -25,7 +25,10 @@ go.work.sum
 # editor folders
 .idea/*
 
-# emacs files
+# Emacs files
 *~
 *#
 .aider*
+
+# Folder for test files
+examples/*
