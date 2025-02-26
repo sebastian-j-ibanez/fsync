@@ -35,7 +35,6 @@ func (c Client) AwaitSync(portNum int) error {
 	if err != nil {
 		return err
 	}
-
 	fmt.Printf("Listening over port %d...\n", portNum)
 
 	// Accept peer connection
@@ -43,48 +42,31 @@ func (c Client) AwaitSync(portNum int) error {
 	if err != nil {
 		return err
 	}
-
 	fmt.Printf("Connection established with client (%s)\n", conn.RemoteAddr().String())
 
-	// Init socket handler
 	c.Sock, err = prot.NewSocketHandler(conn, true)
 	if err != nil {
 		return errors.New("unable to establish connection: " + err.Error())
 	}
 
-	// Get and send file hashes
-	files := []string{}
-	hashes, err := c.DirMan.GetFileHashes(files) // Empty slice will get all file hashes
-	if err != nil {
-		msg := "unable to hash directory: " + err.Error()
-		return errors.New(msg)
-	}
-	var pkt prot.Packet
-	err = pkt.SerializeToBody(hashes, prot.FileHashes)
-	if err != nil {
-		return err
-	}
-	err = c.Sock.SendEncryptedPacket(pkt)
+	// Send local hashes
+	err = c.SendUniqueHashes(nil)
 	if err != nil {
 		msg := "unable to send file hashes: " + err.Error()
 		return errors.New(msg)
 	}
 
-	// Receive unique file hashes
+	// Receive file hashes
 	var uniqueHashes []dir.FileHash
-	err = c.Sock.ReceiveEncryptedData(&uniqueHashes, prot.FileHashes)
+	uniqueHashes, err = c.ReceiveUniqueHashes()
 	if err != nil {
 		msg := "unable to receive file hashes: " + err.Error()
 		return errors.New(msg)
 	}
 
-	for _, file := range uniqueHashes {
-		// Receive file packets
-		err = c.Sock.DownloadFile(file.Name)
-		if err != nil {
-			msg := "unable to download " + file.Name + ": " + err.Error()
-			return errors.New(msg)
-		}
+	err = c.ReceiveUniqueFiles(uniqueHashes)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -92,7 +74,7 @@ func (c Client) AwaitSync(portNum int) error {
 
 // Init sync with peers
 func (c Client) InitSync(filePattern []string) error {
-	// Get file hashes
+	// Get local file hashes
 	localHashes, err := c.DirMan.GetFileHashes(filePattern)
 	if err != nil {
 		msg := "unable to hash directory: " + err.Error()
@@ -106,14 +88,14 @@ func (c Client) InitSync(filePattern []string) error {
 			msg := "unable to establish connection: " + err.Error()
 			return errors.New(msg)
 		}
+
 		c.Sock, err = prot.NewSocketHandler(conn, false)
 		if err != nil {
 			return errors.New("unable to initialize socket handler: " + err.Error())
 		}
 
 		// Get peer file hashes
-		var peerHashes []dir.FileHash
-		err = c.Sock.ReceiveEncryptedData(&peerHashes, prot.FileHashes)
+		peerHashes, err := c.ReceiveUniqueHashes()
 		if err != nil {
 			msg := "unable to receive file hashes: " + err.Error()
 			return errors.New(msg)
@@ -121,25 +103,79 @@ func (c Client) InitSync(filePattern []string) error {
 
 		// Send unique file hashes
 		uniqueFiles := dir.GetUniqueHashes(localHashes, peerHashes)
-		var pkt prot.Packet
-		err = pkt.SerializeToBody(uniqueFiles, prot.FileHashes)
-		if err != nil {
-			return err
-		}
-		err = c.Sock.SendEncryptedPacket(pkt)
+		err = c.SendUniqueHashes(*uniqueFiles)
 		if err != nil {
 			msg := "unable to send file hashes: " + err.Error()
 			return errors.New(msg)
 		}
 
-		for _, file := range *uniqueFiles {
-			// Send file packets
-			path := c.DirMan.Path + "/" + file.Name
-			err = c.Sock.UploadFile(path)
-			if err != nil {
-				msg := "unable to upload " + file.Name + ": " + err.Error()
-				return errors.New(msg)
-			}
+		err = c.SendUniqueFiles(*uniqueFiles)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Receive file hashes from socket
+func (c Client) ReceiveUniqueHashes() ([]dir.FileHash, error) {
+	uniqueHashes := []dir.FileHash{}
+
+	err := c.Sock.ReceiveEncryptedData(&uniqueHashes, prot.FileHashes)
+	if err != nil {
+		return nil, err
+	}
+
+	return uniqueHashes, nil
+}
+
+// Sends unique hashes over client socket
+// Default to file hashes of every file in the directory
+func (c Client) SendUniqueHashes(uniqueHashes []dir.FileHash) error {
+	var err error
+	if uniqueHashes == nil {
+		uniqueHashes, err = c.DirMan.GetFileHashes(nil) // Empty slice will default to all files in directory
+		if err != nil {
+			return err
+		}
+	}
+
+	var pkt prot.Packet
+	err = pkt.SerializeToBody(uniqueHashes, prot.FileHashes)
+	if err != nil {
+		return err
+	}
+
+	err = c.Sock.SendEncryptedPacket(pkt)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c Client) SendUniqueFiles(uniqueFiles []dir.FileHash) error {
+	var err error
+	for _, file := range uniqueFiles {
+		path := c.DirMan.Path + "/" + file.Name
+		err = c.Sock.UploadFile(path)
+		if err != nil {
+			msg := "unable to upload " + file.Name + ": " + err.Error()
+			return errors.New(msg)
+		}
+	}
+
+	return nil
+}
+
+func (c Client) ReceiveUniqueFiles(uniqueHashes []dir.FileHash) error {
+	var err error
+	for _, file := range uniqueHashes {
+		err = c.Sock.DownloadFile(file.Name)
+		if err != nil {
+			msg := "unable to download " + file.Name + ": " + err.Error()
+			return errors.New(msg)
 		}
 	}
 
