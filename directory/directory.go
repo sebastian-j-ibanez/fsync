@@ -100,12 +100,6 @@ func (d DirManager) getAllFileHashes() ([]FileHash, error) {
 
 // Return the SHA256 hash of file
 func (d DirManager) hashFile(entry os.DirEntry) (FileHash, error) {
-	// Get file as DirEntry
-	// entry, err := d.findFileEntry(fileName)
-	// if err != nil {
-	// 	return FileHash{}, err
-	// }
-
 	// Open + read file
 	file, err := os.Open(d.Path + "/" + entry.Name())
 	if err != nil {
@@ -118,9 +112,15 @@ func (d DirManager) hashFile(entry os.DirEntry) (FileHash, error) {
 	hash := sha256.Sum256(fileData)
 	encodedHash := hex.EncodeToString(hash[:])
 
+	info, err := entry.Info()
+	if err != nil {
+		return FileHash{}, err
+	}
+
 	result := FileHash{
 		Name: entry.Name(),
 		Hash: encodedHash,
+		Size: info.Size(),
 	}
 
 	return result, nil
