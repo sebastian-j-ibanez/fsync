@@ -242,7 +242,7 @@ func (s *SocketHandler) ReceiveEncryptedPacket(pkt *Packet) error {
 }
 
 // Receive encrypted data and deserialize
-func (s *SocketHandler) ReceiveEncryptedData(data interface{}, pktType PacketType) error {
+func (s *SocketHandler) ReceiveEncryptedData(data any, pktType PacketType) error {
 	var pkt Packet
 	err := s.ReceiveEncryptedPacket(&pkt)
 	if err != nil {
