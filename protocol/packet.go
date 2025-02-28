@@ -12,6 +12,7 @@ const (
 	FileData
 	FileHashes
 	Int64
+	Bool
 )
 
 type Packet struct {
@@ -21,7 +22,7 @@ type Packet struct {
 }
 
 // SerializeToBody data into packet body
-func (p *Packet) SerializeToBody(data interface{}, packetType PacketType) error {
+func (p *Packet) SerializeToBody(data any, packetType PacketType) error {
 	p.Type = packetType
 
 	// Gob encode data
@@ -37,7 +38,7 @@ func (p *Packet) SerializeToBody(data interface{}, packetType PacketType) error 
 }
 
 // Deserialize packet body into data
-func (p *Packet) DeserializeBody(data interface{}) error {
+func (p *Packet) DeserializeBody(data any) error {
 	dec := gob.NewDecoder(bytes.NewReader(p.Body))
 	err := dec.Decode(data)
 	if err != nil {

@@ -1,10 +1,13 @@
 package client
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	dir "github.com/sebastian-j-ibanez/fsync/directory"
@@ -64,12 +67,23 @@ func (c Client) AwaitSync(portNum int) error {
 		return errors.New(msg)
 	}
 
-	err = c.ReceiveUniqueFiles(uniqueHashes)
+	// Confirmation prompt
+	conf, err := c.confirmDownload(uniqueHashes)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	// Send confirmation
+	var confPkt prot.Packet
+	confPkt.SerializeToBody(conf, prot.Bool)
+	c.Sock.SendEncryptedPacket(confPkt)
+
+	if !conf {
+		fmt.Println("Sync aborted...")
+		return nil
+	}
+
+	return c.ReceiveUniqueFiles(uniqueHashes)
 }
 
 // Init sync with peers
@@ -88,6 +102,7 @@ func (c Client) InitSync(filePattern []string) error {
 			msg := "unable to establish connection: " + err.Error()
 			return errors.New(msg)
 		}
+		fmt.Printf("Connection established with client (%s)\n", peer.Addr())
 
 		c.Sock, err = prot.NewSocketHandler(conn, false)
 		if err != nil {
@@ -109,9 +124,23 @@ func (c Client) InitSync(filePattern []string) error {
 			return errors.New(msg)
 		}
 
-		err = c.SendUniqueFiles(*uniqueFiles)
+		// Receive confirmation
+		var confPkt prot.Packet
+		c.Sock.ReceiveEncryptedPacket(&confPkt)
+
+		// Check confirmation
+		var result bool
+		err = confPkt.DeserializeBody(&result)
 		if err != nil {
-			return err
+			msg := "unable to deserialize confirmation: " + err.Error()
+			return errors.New(msg)
+		}
+
+		if result {
+			err = c.SendUniqueFiles(*uniqueFiles)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -180,4 +209,31 @@ func (c Client) ReceiveUniqueFiles(uniqueHashes []dir.FileHash) error {
 	}
 
 	return nil
+}
+
+func (c Client) confirmDownload(uniqueHashes []dir.FileHash) (bool, error) {
+	for {
+		// fmt.Println("\033[1mFiles\t\t\t\tSize\033[0m")
+		totalSize := int64(0)
+		for _, file := range uniqueHashes {
+			// fmt.Printf("\033[1m%s\t\t\t\t%d\033[0m\n", file.Name, file.Size)
+			totalSize += file.Size
+		}
+
+		fmt.Printf("\nTotal size: \033[1m%d\033[0m\n", totalSize)
+		fmt.Print("Proceed with download? [y/n]: ")
+
+		reader := bufio.NewReader(os.Stdin)
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			return false, err
+		}
+
+		switch strings.TrimSpace(input) {
+		case "y":
+			return true, nil
+		case "n":
+			return false, nil
+		}
+	}
 }
