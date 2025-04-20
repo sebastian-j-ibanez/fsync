@@ -124,10 +124,12 @@ func (c Client) InitSync(filePattern []string) error {
 			return errors.New(msg)
 		}
 
-		// Receive confirmation
+		// Receive confirmation packet
 		var confPkt prot.Packet
-		c.Sock.ReceiveEncryptedPacket(&confPkt)
-
+		if err := c.Sock.ReceiveEncryptedPacket(&confPkt); err != nil {
+			return fmt.Errorf("failed to receive confirmation: %w", err)
+		}		
+		
 		// Check confirmation
 		var result bool
 		err = confPkt.DeserializeBody(&result)
@@ -135,12 +137,13 @@ func (c Client) InitSync(filePattern []string) error {
 			msg := "unable to deserialize confirmation: " + err.Error()
 			return errors.New(msg)
 		}
-
+		
 		if result {
-			err = c.SendUniqueFiles(*uniqueFiles)
-			if err != nil {
+			if err := c.SendUniqueFiles(*uniqueFiles); err != nil {
 				return err
 			}
+		} else {
+			fmt.Println("Client rejected file transfer...")
 		}
 	}
 
