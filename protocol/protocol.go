@@ -207,7 +207,7 @@ func (s *SocketHandler) SendEncryptedPacket(pkt Packet) error {
 
 	ct, err := s.Sealer.Seal(pkt.Body, nil)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	pkt.Body = ct
@@ -226,7 +226,7 @@ func (s *SocketHandler) ReceiveEncryptedPacket(pkt *Packet) error {
 		return errors.New("socket decoder uninitialized")
 	}
 
-	err := s.Dec.Decode(&pkt)
+	err := s.Dec.Decode(pkt)
 	if err != nil {
 		return err
 	}
@@ -242,7 +242,7 @@ func (s *SocketHandler) ReceiveEncryptedPacket(pkt *Packet) error {
 }
 
 // Receive encrypted data and deserialize
-func (s *SocketHandler) ReceiveEncryptedData(data interface{}, pktType PacketType) error {
+func (s *SocketHandler) ReceiveEncryptedData(data any, pktType PacketType) error {
 	var pkt Packet
 	err := s.ReceiveEncryptedPacket(&pkt)
 	if err != nil {
