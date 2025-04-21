@@ -88,7 +88,7 @@ Uses list of peers unless port flag is specified.`,
 
 func init() {
 	rootCmd.AddCommand(syncCmd)
-	syncCmd.PersistentFlags().BoolP("scan", "s", true, "scan network for peer and sync")
+	syncCmd.PersistentFlags().BoolP("scan", "s", false, "scan network for peer and sync")
 	syncCmd.PersistentFlags().StringP("address", "a", "", "sync with specific IP:PORT")
 	syncCmd.PersistentFlags().BoolP("peers", "p", false, "sync with registered peers")
 	syncCmd.MarkFlagsMutuallyExclusive("address", "scan", "peers")

@@ -38,7 +38,7 @@ var listenCmd = &cobra.Command{
 			}
 		}
 
-		// Handle scan flag
+		// Broadcast MDNS service
 		endBroadcast := make(chan bool)
 		if scanFlag {
 			go func() {
@@ -74,8 +74,10 @@ var listenCmd = &cobra.Command{
 			os.Exit(-1)
 		}
 
-		// End broadcast
-		endBroadcast <- true
+		// End MDNS service broadcast
+		if scanFlag {
+			endBroadcast <- true
+		}
 
 		fmt.Printf("Sync completed successfully!\n")
 	},
@@ -83,6 +85,6 @@ var listenCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(listenCmd)
-	listenCmd.PersistentFlags().BoolP("scan", "s", true, "scan network for peer")
+	listenCmd.PersistentFlags().BoolP("scan", "s", false, "scan network for peer")
 	listenCmd.PersistentFlags().StringP("port", "p", "2000", "specify the port")
 }
