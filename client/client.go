@@ -156,7 +156,8 @@ func (c Client) InitSync(filePattern []string) error {
 		}
 
 		if result {
-			if err := c.SendUniqueFiles(*uniqueFiles); err != nil {
+			err := c.SendUniqueFiles(*uniqueFiles)
+			if err != nil {
 				return err
 			}
 		} else {
@@ -164,6 +165,11 @@ func (c Client) InitSync(filePattern []string) error {
 		}
 
 		// Wait until client is finished transfer
+		var finPkt prot.Packet
+		if err := c.Sock.ReceiveEncryptedPacket(&finPkt); err != nil {
+			return fmt.Errorf("failed to receive confirmation: %w", err)
+		}
+
 		var clientIsFinished bool
 		err = confPkt.DeserializeBody(&clientIsFinished)
 		if err != nil {
