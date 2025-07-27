@@ -75,12 +75,29 @@ func (c Client) AwaitSync(portNum int) error {
 
 	// Send confirmation
 	var confPkt prot.Packet
-	confPkt.SerializeToBody(conf, prot.Bool)
-	c.Sock.SendEncryptedPacket(confPkt)
+	err = confPkt.SerializeToBody(conf, prot.Bool)
+	if err != nil {
+		return err
+	}
+	err = c.Sock.SendEncryptedPacket(confPkt)
+	if err != nil {
+		return err
+	}
 
 	if !conf {
 		fmt.Println("Sync aborted...")
 		return nil
+	}
+
+	// Tell peer that we are finished
+	var finPkt prot.Packet
+	err = confPkt.SerializeToBody(true, prot.Bool)
+	if err != nil {
+		return err
+	}
+	err = c.Sock.SendEncryptedPacket(finPkt)
+	if err != nil {
+		return err
 	}
 
 	return c.ReceiveUniqueFiles(uniqueHashes)
@@ -144,6 +161,14 @@ func (c Client) InitSync(filePattern []string) error {
 			}
 		} else {
 			fmt.Println("Client rejected file transfer...")
+		}
+
+		// Wait until client is finished transfer
+		var clientIsFinished bool
+		err = confPkt.DeserializeBody(&clientIsFinished)
+		if err != nil {
+			msg := "unable to deserialize confirmation: " + err.Error()
+			return errors.New(msg)
 		}
 	}
 
