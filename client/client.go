@@ -38,6 +38,7 @@ func (c Client) AwaitSync(portNum int) error {
 	if err != nil {
 		return err
 	}
+	defer lis.Close()
 	fmt.Printf("Listening over port %d...\n", portNum)
 
 	// Accept peer connection
@@ -113,70 +114,81 @@ func (c Client) InitSync(filePattern []string) error {
 	}
 
 	for _, peer := range c.Peers {
-		// Connect to peer, init socket
-		conn, err := net.Dial("tcp", peer.Addr())
-		if err != nil {
-			msg := "unable to establish connection: " + err.Error()
-			return errors.New(msg)
-		}
-		fmt.Printf("Connection established with client (%s)\n", peer.Addr())
-
-		c.Sock, err = prot.NewSocketHandler(conn, false)
-		if err != nil {
-			return errors.New("unable to initialize socket handler: " + err.Error())
-		}
-
-		// Get peer file hashes
-		peerHashes, err := c.ReceiveUniqueHashes()
-		if err != nil {
-			msg := "unable to receive file hashes: " + err.Error()
-			return errors.New(msg)
-		}
-
-		// Send unique file hashes
-		uniqueFiles := dir.GetUniqueHashes(localHashes, peerHashes)
-		err = c.SendUniqueHashes(*uniqueFiles)
-		if err != nil {
-			msg := "unable to send file hashes: " + err.Error()
-			return errors.New(msg)
-		}
-
-		// Receive confirmation packet
-		var confPkt prot.Packet
-		err = c.Sock.ReceiveEncryptedPacket(&confPkt)
-		if err != nil {
-			return fmt.Errorf("failed to receive confirmation: %w", err)
-		}
-
-		// Check confirmation
-		var result bool
-		err = confPkt.DeserializeBody(&result)
-		if err != nil {
-			msg := "unable to deserialize confirmation: " + err.Error()
-			return errors.New(msg)
-		}
-
-		if result {
-			err := c.SendUniqueFiles(*uniqueFiles)
+		if err := func() error {
+			// Connect to peer, init socket
+			conn, err := net.Dial("tcp", peer.Addr())
 			if err != nil {
-				return err
+				msg := "unable to establish connection: " + err.Error()
+				return errors.New(msg)
 			}
-		} else {
-			fmt.Println("Client rejected file transfer...")
-		}
+			defer func(conn net.Conn) {
+				err := conn.Close()
+				if err != nil {
+					fmt.Println("unable to close connection: " + err.Error())
+				}
+			}(conn)
+			fmt.Printf("Connection established with client (%s)\n", peer.Addr())
 
-		// Wait until client is finished transfer
-		var finPkt prot.Packet
-		err = c.Sock.ReceiveEncryptedPacket(&finPkt)
-		if err != nil {
-			return fmt.Errorf("failed to receive confirmation: %w", err)
-		}
+			c.Sock, err = prot.NewSocketHandler(conn, false)
+			if err != nil {
+				return errors.New("unable to initialize socket handler: " + err.Error())
+			}
 
-		var clientIsFinished bool
-		err = finPkt.DeserializeBody(&clientIsFinished)
-		if err != nil {
-			msg := "unable to deserialize confirmation: " + err.Error()
-			return errors.New(msg)
+			// Get peer file hashes
+			peerHashes, err := c.ReceiveUniqueHashes()
+			if err != nil {
+				msg := "unable to receive file hashes: " + err.Error()
+				return errors.New(msg)
+			}
+
+			// Send unique file hashes
+			uniqueFiles := dir.GetUniqueHashes(localHashes, peerHashes)
+			err = c.SendUniqueHashes(*uniqueFiles)
+			if err != nil {
+				msg := "unable to send file hashes: " + err.Error()
+				return errors.New(msg)
+			}
+
+			// Receive confirmation packet
+			var confPkt prot.Packet
+			err = c.Sock.ReceiveEncryptedPacket(&confPkt)
+			if err != nil {
+				return fmt.Errorf("failed to receive confirmation: %w", err)
+			}
+
+			// Check confirmation
+			var result bool
+			err = confPkt.DeserializeBody(&result)
+			if err != nil {
+				msg := "unable to deserialize confirmation: " + err.Error()
+				return errors.New(msg)
+			}
+
+			if result {
+				err := c.SendUniqueFiles(*uniqueFiles)
+				if err != nil {
+					return err
+				}
+			} else {
+				fmt.Println("Client rejected file transfer...")
+			}
+
+			// Wait until client is finished transfer
+			var finPkt prot.Packet
+			err = c.Sock.ReceiveEncryptedPacket(&finPkt)
+			if err != nil {
+				return fmt.Errorf("failed to receive confirmation: %w", err)
+			}
+
+			var clientIsFinished bool
+			err = finPkt.DeserializeBody(&clientIsFinished)
+			if err != nil {
+				msg := "unable to deserialize confirmation: " + err.Error()
+				return errors.New(msg)
+			}
+			return nil
+		}(); err != nil {
+			return err
 		}
 	}
 
