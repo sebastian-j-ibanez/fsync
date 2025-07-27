@@ -91,7 +91,7 @@ func (c Client) AwaitSync(portNum int) error {
 
 	// Tell peer that we are finished
 	var finPkt prot.Packet
-	err = confPkt.SerializeToBody(true, prot.Bool)
+	err = finPkt.SerializeToBody(true, prot.Bool)
 	if err != nil {
 		return err
 	}
@@ -143,7 +143,8 @@ func (c Client) InitSync(filePattern []string) error {
 
 		// Receive confirmation packet
 		var confPkt prot.Packet
-		if err := c.Sock.ReceiveEncryptedPacket(&confPkt); err != nil {
+		err = c.Sock.ReceiveEncryptedPacket(&confPkt)
+		if err != nil {
 			return fmt.Errorf("failed to receive confirmation: %w", err)
 		}
 
@@ -166,12 +167,13 @@ func (c Client) InitSync(filePattern []string) error {
 
 		// Wait until client is finished transfer
 		var finPkt prot.Packet
-		if err := c.Sock.ReceiveEncryptedPacket(&finPkt); err != nil {
+		err = c.Sock.ReceiveEncryptedPacket(&finPkt)
+		if err != nil {
 			return fmt.Errorf("failed to receive confirmation: %w", err)
 		}
 
 		var clientIsFinished bool
-		err = confPkt.DeserializeBody(&clientIsFinished)
+		err = finPkt.DeserializeBody(&clientIsFinished)
 		if err != nil {
 			msg := "unable to deserialize confirmation: " + err.Error()
 			return errors.New(msg)
