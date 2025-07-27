@@ -32,7 +32,7 @@ func (c Client) AwaitSync(portNum int) error {
 	if portNum == -1 {
 		portNum = defaultPort
 	}
-	port := ": " + strconv.Itoa(portNum)
+	port := "0.0.0.0:" + strconv.Itoa(portNum)
 
 	lis, err := net.Listen("tcp", port)
 	if err != nil {

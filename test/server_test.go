@@ -53,7 +53,7 @@ func Test2_UploadFile(t *testing.T) {
 }
 
 func Test3_AwaitSync(t *testing.T) {
-	const port = 2000
+	const port = 8080
 
 	// Init directory manager
 	path, err := os.Getwd()

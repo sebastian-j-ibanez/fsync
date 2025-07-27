@@ -17,7 +17,7 @@ import (
 var listenCmd = &cobra.Command{
 	Use:   "listen",
 	Short: "Listen for sync requests",
-	Long:  `Listens for a sync request over a socket connection on port 2000.`,
+	Long:  `Listens for a sync request over a socket connection on port 8080.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Get flags
 		portFlag, _ := cmd.Flags().GetString("port")
@@ -86,5 +86,5 @@ var listenCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(listenCmd)
 	listenCmd.PersistentFlags().BoolP("scan", "s", false, "scan network for peer")
-	listenCmd.PersistentFlags().StringP("port", "p", "2000", "specify the port")
+	listenCmd.PersistentFlags().StringP("port", "p", "8080", "specify the port")
 }

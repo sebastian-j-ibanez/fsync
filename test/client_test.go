@@ -12,7 +12,7 @@ import (
 	prot "github.com/sebastian-j-ibanez/fsync/protocol"
 )
 
-const addr = "127.0.0.1:2000"
+const addr = "127.0.0.1:8080"
 
 // Receive packets and print their order num
 func Test1_ReceivePktNum(t *testing.T) {
@@ -69,7 +69,7 @@ func Test3_InitSync(t *testing.T) {
 	// Mock peer
 	peer := prot.Peer{
 		IP:   "127.0.0.1",
-		Port: "2000",
+		Port: "8080",
 	}
 
 	// Init client
@@ -96,7 +96,7 @@ func Test4_RegisterPeer(t *testing.T) {
 	// Register mock peer
 	p := prot.Peer{
 		IP:   "127.0.0.1",
-		Port: "2000",
+		Port: "8080",
 	}
 	prot.RegisterPeer(p)
 	fmt.Println("registered default peer.")
