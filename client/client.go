@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	defaultPort = 8001
+	defaultPort = 8080
 	serviceName = "_fsync._tcp"
 	timeout     = 10 * time.Second
 )
