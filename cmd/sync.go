@@ -48,7 +48,7 @@ Uses list of peers unless port flag is specified.`,
 			var peer prot.Peer
 			if ip := net.ParseIP(addrFlag); ip != nil {
 				peer.IP = ip.String()
-				peer.Port = "2000"
+				peer.Port = "8001"
 			} else {
 				fmt.Fprintf(os.Stderr, "error: invalid peer ip: %s\n", addrFlag)
 				os.Exit(-1)

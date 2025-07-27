@@ -13,7 +13,6 @@ import (
 )
 
 const (
-	Port        = "2000"
 	MaxBodySize = 61440
 )
 

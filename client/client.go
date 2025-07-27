@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	defaultPort = 2000
+	defaultPort = 8001
 	serviceName = "_fsync._tcp"
 	timeout     = 10 * time.Second
 )
@@ -128,8 +128,8 @@ func (c Client) InitSync(filePattern []string) error {
 		var confPkt prot.Packet
 		if err := c.Sock.ReceiveEncryptedPacket(&confPkt); err != nil {
 			return fmt.Errorf("failed to receive confirmation: %w", err)
-		}		
-		
+		}
+
 		// Check confirmation
 		var result bool
 		err = confPkt.DeserializeBody(&result)
@@ -137,7 +137,7 @@ func (c Client) InitSync(filePattern []string) error {
 			msg := "unable to deserialize confirmation: " + err.Error()
 			return errors.New(msg)
 		}
-		
+
 		if result {
 			if err := c.SendUniqueFiles(*uniqueFiles); err != nil {
 				return err

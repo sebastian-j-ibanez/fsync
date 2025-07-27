@@ -24,7 +24,7 @@ var listenCmd = &cobra.Command{
 		scanFlag, _ := cmd.Flags().GetBool("scan")
 
 		// Handle port flag
-		port := 2000
+		port := 8001
 		var err error
 		if portFlag != "" {
 			port, err = strconv.Atoi(portFlag)
